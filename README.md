@@ -3,7 +3,7 @@ This is a light-weight iPhone app designed to work with a Raspberry Pi 3b+. Afte
 
 
 # Dependencies
-iOS 14.3 or higher | CocoaPods - https://guides.cocoapods.org/using/getting-started.html | CocoaMQTT
+iOS 14.3 or higher | CocoaPods - https://guides.cocoapods.org/using/getting-started.html | CocoaMQTT | Python 3 or higher - https://www.python.org/downloads/ | pip (used to install packages and APIs) - https://pip.pypa.io/en/stable/installing/ | Paho-MQTT - https://pypi.org/project/paho-mqtt/
 
 
 # MQTT Server Setup
@@ -41,3 +41,30 @@ sudo kill <the PID of the process running on port 1883>
 
 mosquitto -v
 ```
+
+
+# RPI Python Files
+On the Raspberry Pi, install the "main.py" file inside the "Python Files" folder. This file will read and decode messages received from the client device.
+
+Make sure the required libraries are already installed
+
+```
+sudo apt-get install python-dev
+
+sudo apt-get install python-rpi.gpio
+
+sudo apt-get install python-pip
+
+pip install paho-mqtt
+```
+
+Compile the python file as an executable, then run it
+
+```
+cd <location of main.py file>
+
+chmod +x main.py
+
+./main.py
+```
+
