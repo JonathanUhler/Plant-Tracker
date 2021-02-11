@@ -9,6 +9,7 @@ PRE-RELEASES--
 	version		 date							changes
 	-------		--------			----------------------------------
 	0.0.0		2/8/21				Create Xcode files
+	pre-1.0.0	2/10/21				First working version of Plant Tracker
 											
 
 FULL-RELEASES--
