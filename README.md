@@ -68,5 +68,3 @@ chmod +x subscriber.py
 ./subscriber.py
 ```
 
-The "publisher.py" file is used to send information out (RPI -> iOS) only. The "subscriber.py" file handles incoming connections (iOS -> RPI)
-
