@@ -2,13 +2,21 @@
 # -*- coding: utf-8 -*-
 
 import paho.mqtt.client as mqtt # Import mqtt
+import paho.mqtt.publish as publish # Import mqtt
 # import RPi.GPIO as gpio # Import GPIO --> This will not be used in this case
+
+
+serverAddress = "172.20.8.47"
+serverTo = "rpi/to"
+serverFrom = "rpi/from"
 
 
 # ======================================================================
 # def connectionStatus
 #
-# Subscribes the RPI to the topic "rpi/gpio"
+# Subscribes the RPI to the topic "rpi/to" which handles data from the
+# iOS device to the RPI and the topic "rpi/from" which handles data from
+# the RPI to the iOS
 #
 # Arguments--
 #
@@ -25,7 +33,8 @@ import paho.mqtt.client as mqtt # Import mqtt
 # None
 #
 def connectionStatus(client, userdata, flags, rc):
-	mqttClient.subscribe("rpi/gpio")
+    mqttClient.subscribe(serverTo)
+    mqttClient.subscribe(serverFrom)
 # end: def connectionStatus
 
 
@@ -47,28 +56,23 @@ def connectionStatus(client, userdata, flags, rc):
 # None
 #
 def messageDecoder(client, userdata, msg):
-	
-	# Decode the message
-	message = msg.payload.decode(encoding='UTF-8')
-	
-	# If the message is "on"
-	if message == "on":
-		print("Msg = on")
-		
-	# If the message is off
-	elif message == "off":
-		print("Msg = off")
-		
-	# If the message is unknown
-	else:
-		print("Unknown message!")
+    
+    # Decode the message
+    message = msg.payload.decode(encoding='UTF-8')
+    
+    # If the client wants the plant data
+    if (message == "requestPlantData"):
+        # Publish the up-to-date plant data here
+        publish.single(serverFrom, "data requested", hostname = serverAddress)
+        
+    else:
+        # Print messages
+        print("NEW MESSAGE: \"" + message + "\"")
 # end: def messageDecoder
 
 
-# Set client name
+# Set client name (of the raspberry pi)
 clientName = "Joffy-RPI3B+"
-# Set the address of the Raspberry Pi
-serverAddress = "172.20.8.47"
 
 # Instate Eclipse Paho as mqttClient
 mqttClient = mqtt.Client(clientName)
