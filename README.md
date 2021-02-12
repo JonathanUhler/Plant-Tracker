@@ -44,7 +44,7 @@ mosquitto -v
 
 
 # RPI Python Files
-On the Raspberry Pi, install the "main.py" file inside the "Python Files" folder. This file will read and decode messages received from the client device.
+On the Raspberry Pi, install the "subscriber.py" file inside the "Python Files" folder. This file will read and decode messages received from the client device.
 
 Make sure the required libraries are already installed
 
@@ -61,10 +61,12 @@ pip install paho-mqtt
 Compile the python file as an executable, then run it
 
 ```
-cd <location of main.py file>
+cd <location of subscriber.py file>
 
-chmod +x main.py
+chmod +x subscriber.py
 
-./main.py
+./subscriber.py
 ```
+
+The "publisher.py" file is used to send information out (RPI -> iOS) only. The "subscriber.py" file handles incoming connections (iOS -> RPI)
 
