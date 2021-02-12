@@ -1,5 +1,5 @@
 # Plant-Tracker
-This is a light-weight iPhone app designed to work with a Raspberry Pi 3b+. After hosting a MQTT server, the app and the Pi can be connected with other components to alert the user to water plants. The app and server follow this tutorial: https://www.raspberrypi.org/forums/viewtopic.php?t=196010 but expand on the general concepts.
+This is a light-weight iPhone app designed to work with a Raspberry Pi 3b+. After hosting a MQTT server, the app and the Pi can be connected with other components to alert the user to water plants. The app and server follow https://www.raspberrypi.org/forums/viewtopic.php?t=196010 and https://anoop4real.medium.com/how-to-send-data-from-ios-to-raspberry-pi-and-an-lcd-display-using-mqtt-764fee6e8fc5 but expand on the general concepts presented in the tutorials.
 
 
 # Dependencies
