@@ -6,10 +6,16 @@ Project created 1/18/2021 -- Changelog begin:
 
 PRE-RELEASES--
 
-	version		 date							changes
-	-------		--------			----------------------------------
-	0.0.0		2/8/21				Create Xcode files
-	pre-1.0.0	2/10/21				First working version of Plant Tracker
+	version		 date						changes
+	-------		--------		----------------------------------
+	pre-0.0.0	2/8/21			Create Xcode files
+	
+	pre-1.0.0	2/10/21			First working version of Plant Tracker
+	
+	pre-2.0.0	2/11/21			Changes in this version:
+									-Added app icons
+									-Added printMessage function and button to request plant data from RPI
+									-Changed layout of elements in the storyboard
 											
 
 FULL-RELEASES--
