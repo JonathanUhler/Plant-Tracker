@@ -7,8 +7,8 @@ import paho.mqtt.publish as publish # Import mqtt
 
 
 serverAddress = "172.20.8.47"
-serverTo = "rpi/to"
-serverFrom = "rpi/from"
+serverTo = "rpi/torpi"
+serverFrom = "rpi/fromrpi"
 
 
 # ======================================================================
@@ -65,9 +65,8 @@ def messageDecoder(client, userdata, msg):
         # Publish the up-to-date plant data here
         publish.single(serverFrom, "data requested", hostname = serverAddress)
         
-    else:
-        # Print messages
-        print("NEW MESSAGE: \"" + message + "\"")
+        
+    print("NEW MESSAGE: \"" + message + "\"")
 # end: def messageDecoder
 
 
