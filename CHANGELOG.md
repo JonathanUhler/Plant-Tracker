@@ -16,6 +16,10 @@ PRE-RELEASES--
 									-Added app icons
 									-Added printMessage function and button to request plant data from RPI
 									-Changed layout of elements in the storyboard
+									
+	pre-2.1.0	2/12/21			Changes in this version:
+									-Added displayClearRect and displayText functions
+									-Added a method of pinging the server to ensure a connection was made
 											
 
 FULL-RELEASES--

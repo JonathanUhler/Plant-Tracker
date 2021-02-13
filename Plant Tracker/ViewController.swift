@@ -44,6 +44,10 @@
 //									-Added app icons
 //									-Added printMessage function and button to request plant data from RPI
 //									-Changed layout of elements in the storyboard
+//
+// pre-2.1.0	2/12/21			Changes in this version:
+//									-Added displayClearRect and displayText functions
+//									-Added a method of pinging the server to ensure a connection was made
 
 
 
@@ -53,9 +57,20 @@ import CocoaMQTT // MQTT server support
 
 
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-// class ViewController
+// MARK: class ViewController
 //
 class ViewController: UIViewController {
+	
+	
+	// MARK: Init Class Variables
+	// Get the screen dimensions
+	let screenRect = UIScreen.main.bounds
+	lazy var screenWidth = screenRect.size.width
+	lazy var screenHeight = screenRect.size.height
+	// Declare the topics used to send and receive data
+	let rpi_torpi = "rpi/torpi"
+	let rpi_fromrpi = "rpi/fromrpi"
+	
 	
 	
 	// Instace of CocoaMQTT as mqttClient
@@ -68,7 +83,7 @@ class ViewController: UIViewController {
 
 	
 	// ====================================================================================================
-	// func viewDidLoad
+	// MARK: func viewDidLoad
 	//
 	// The function that is called after the view loads
 	//
@@ -88,15 +103,90 @@ class ViewController: UIViewController {
 	// end: func viewDidLoad
 	
 	
-	override func didReceiveMemoryWarning() {
+	// ==============================================================================================
+	// MARK: func displayClearRect
+	//
+	// A function to display a rectangle that clears the date and information text to display new
+	// text on top of it
+	//
+	// Arguments--
+	// x:			The x position of the rectangle
+	//
+	// y:			The y position of the rectangle
+	//
+	// w:			The width of the rectangle
+	//
+	// h:			The height of the rectangle
+	//
+	// font:		The font size of the retangle
+	//
+	// Returns--
+	// None
+	//
+	func displayClearRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
 		
-		super.didReceiveMemoryWarning()
+		let rect = CGRect(x: x, y: y, width: w, height: h)
+		let view = UIView(frame: rect)
+		view.backgroundColor = UIColor.white
+
+		self.view.addSubview(view)
 		
-	}
+	} // end: func displayClearRect
+	
+	
+	// ==============================================================================================
+	// MARK: func displayText
+	//
+	// A function to display text on the phone screen
+	//
+	// Arguments--
+	// x:		The x position of the text
+	//
+	// y:		The y position of the text
+	//
+	// w:		The width of the text box
+	//
+	// h:		The height of the text box
+	//
+	// color:	The color of the text
+	//
+	// Returns--
+	// None
+	//
+	func displayText(x: Int, y: Int, w: Int, h: Int, msg: String, color: UIColor) {
+				
+		let textRect: CGRect = CGRect(x: x, y: y, width: w, height: h)
+		let textLabel: UILabel = UILabel(frame: textRect)
+		textLabel.text = msg
+		textLabel.textAlignment = .center
+		textLabel.font = UIFont(name: "Gill Sans", size: 15)
+		textLabel.textColor = color
+		self.view.addSubview(textLabel)
+		
+	} // end: func displayText
 
 	
 	// ====================================================================================================
-	// func gpio40Switch
+	// MARK: func getHostIP
+	//
+	// Allows the user to enter the IP of the host RPI in a textbox
+	//
+	// Arguments--
+	//
+	// sender:		the instance of the UITextField
+	//
+	// Returns--
+	//
+	// None
+	//
+	@IBAction func getHostIP(_ sender: UITextField) {
+		
+	}
+	// end: func getHostIP
+	
+	
+	// ====================================================================================================
+	// MARK: func connectionSwitch
 	//
 	// Handles the user changing the state of the GPIO pin 40 switch
 	//
@@ -108,63 +198,61 @@ class ViewController: UIViewController {
 	//
 	// None
 	//
-	@IBAction func gpio40Switch(_ sender: UISwitch) {
+	@IBAction func connectionSwitch(_ sender: UISwitch) {
 		
 		// If the switch is already on
 		if sender.isOn {
-			// Publish a "topic" called "rpi/gpio" with the value "on"
-			mqttClient.publish("rpi/to", withString: "on")
+			// Connect to the server
+			mqttClient.connect()
+			// Wait for a connection to be established
+			DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
+				// Ping the server to make sure it is working
+				self.mqttClient.subscribe(self.rpi_fromrpi)
+				self.mqttClient.publish(self.rpi_torpi, withString: "ping")
+				
+				var pingAcknowledged = false
+
+				// If the ping was acknowledged
+				self.mqttClient.didReceiveMessage = { mqtt, message, id in
+					if (message.string! == "pingAcknowledged") {
+						pingAcknowledged = true
+					}
+				}
+				
+				DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
+					if (pingAcknowledged) {
+						// Clear any previous status message
+						self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
+						// Tell the user they have connected
+						self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
+						// Unsubscribe from the "from" stream
+						self.mqttClient.unsubscribe(self.rpi_fromrpi)
+						return
+					}
+					else {
+						// Clear any previous status message
+						self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
+						// If the ping was not acknowledged
+						self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 120, h: 15, msg: "Unable to connect!", color: UIColor.red)
+					}
+				})
+			})
 		}
 		else { // Else if the switch is not on (it is off)
-			// Publish a "topic" called "rpi/gpio" with the value "off"
-			mqttClient.publish("rpi/to", withString: "off")
+			// Disconnect from the server
+			mqttClient.disconnect()
+			
+			// Clear any previous status message
+			displayClearRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15)
+			displayText(x: Int(screenWidth * 0.17), y: Int(screenHeight * 0.13), w: 90, h: 15, msg: "Disconnected", color: UIColor.black)
 		}
 		
 	}
-	// end: func gpio40Switch
+	// end: func connectionSwitch
 	
 	
 	// ====================================================================================================
-	// func connectButton
-	//
-	// Handles the user pressing the connect button
-	//
-	// Arguments--
-	//
-	// sender:		the instance of the UIButton
-	//
-	// Returns--
-	//
-	// None
-	//
-	@IBAction func connectButton(_ sender: UIButton) {
-		// Connect to the server
-		mqttClient.connect()
-	}
-	// end: func connectButton
-	
-	
-	// ====================================================================================================
-	// func disconnectButton
-	//
-	// Handles the user pressing the disconnect button
-	//
-	// Arguments--
-	//
-	// sender:		the instance of the UIButton
-	//
-	// Returns--
-	//
-	// None
-	//
-	@IBAction func disconnectButton(_ sender: UIButton) {
-		mqttClient.disconnect() // Disconnect from the server
-	}
-	// end: func disconnectButton
-	
-	
-	// ====================================================================================================
-	// func printMessages
+	// MARK: func requestData
 	//
 	// Handles message sent by the RPI to the iOS device
 	//
@@ -176,20 +264,39 @@ class ViewController: UIViewController {
 	//
 	// None
 	//
-	@IBAction func printMessages(_ sender: UIButton) {
+	@IBAction func requestData(_ sender: UIButton) {
 		
-		// Subscribe to messages
-		mqttClient.subscribe("rpi/from")
+		// Subscribe to messages coming from the raspberry pi
+		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		mqttClient.publish("rpi/from", withString: "requestPlantData")
+		mqttClient.publish(rpi_torpi, withString: "requestPlantData")
 		
 		// Print any messages
 		mqttClient.didReceiveMessage = { mqtt, message, id in
-			print("Message received in topic \(message.topic) with payload \(message.string!)")
+			self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
 		}
 		
 	}
-	// end: func printMessages
+	// end: func requestData
+	
+	
+	// ====================================================================================================
+	// MARK: func addPlant
+	//
+	// Handles adding a new plant and plant sensors
+	//
+	// Arguments--
+	//
+	// sender:		the instance of the UIButton
+	//
+	// Returns--
+	//
+	// None
+	//
+	@IBAction func addPlant(_ sender: UIButton) {
+		
+	}
+	// end: func addPlant
 	
 	
 }
