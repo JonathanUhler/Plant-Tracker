@@ -48,6 +48,9 @@
 // pre-2.1.0	2/12/21			Changes in this version:
 //									-Added displayClearRect and displayText functions
 //									-Added a method of pinging the server to ensure a connection was made
+//
+// pre-2.2.0	2/12/21			Changes in this version:
+//									-Changed the way the client pings the server to establish a connection
 
 
 
@@ -204,47 +207,31 @@ class ViewController: UIViewController {
 		if sender.isOn {
 			// Connect to the server
 			mqttClient.connect()
-			// Wait for a connection to be established
-			DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
-				// Ping the server to make sure it is working
-				self.mqttClient.subscribe(self.rpi_fromrpi)
-				self.mqttClient.publish(self.rpi_torpi, withString: "ping")
+			
+			// If the client disconnected
+			mqttClient.didDisconnect = { mqtt, error in
+				// Clear any previous status message
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
 				
-				var pingAcknowledged = false
-
-				// If the ping was acknowledged
-				self.mqttClient.didReceiveMessage = { mqtt, message, id in
-					if (message.string! == "pingAcknowledged") {
-						pingAcknowledged = true
-					}
+				if (error == nil) {
+					// If the client disconnected on their own with the button
+					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Disconnected", color: UIColor.black)
 				}
-				
-				DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
-					if (pingAcknowledged) {
-						// Clear any previous status message
-						self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
-						// Tell the user they have connected
-						self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
-						// Unsubscribe from the "from" stream
-						self.mqttClient.unsubscribe(self.rpi_fromrpi)
-						return
-					}
-					else {
-						// Clear any previous status message
-						self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
-						// If the ping was not acknowledged
-						self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 120, h: 15, msg: "Unable to connect!", color: UIColor.red)
-					}
-				})
-			})
+				else {
+					// If the client was forcefully disconnected
+					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 150, h: 15, msg: "Forcefully disconnected", color: UIColor.red)
+				}
+			}
+			
+			// Clear any previous status message
+			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
+			// Tell the user they have connected
+			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
+			
 		}
 		else { // Else if the switch is not on (it is off)
 			// Disconnect from the server
 			mqttClient.disconnect()
-			
-			// Clear any previous status message
-			displayClearRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15)
-			displayText(x: Int(screenWidth * 0.17), y: Int(screenHeight * 0.13), w: 90, h: 15, msg: "Disconnected", color: UIColor.black)
 		}
 		
 	}

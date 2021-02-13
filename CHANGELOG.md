@@ -20,6 +20,9 @@ PRE-RELEASES--
 	pre-2.1.0	2/12/21			Changes in this version:
 									-Added displayClearRect and displayText functions
 									-Added a method of pinging the server to ensure a connection was made
+									
+	pre-2.2.0	2/12/21			Changes in this version:
+									-Changed the way the client pings the server to establish a connection
 											
 
 FULL-RELEASES--
