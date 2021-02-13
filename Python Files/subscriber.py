@@ -65,6 +65,10 @@ def messageDecoder(client, userdata, msg):
         # Publish the up-to-date plant data here
         publish.single(serverFrom, "data requested", hostname = serverAddress)
         
+    elif (message == "ping"):
+        # Acknowledge the ping
+        publish.single(serverFrom, "pingAcknowledged", hostname = serverAddress)
+        
         
     print("NEW MESSAGE: \"" + message + "\"")
 # end: def messageDecoder
