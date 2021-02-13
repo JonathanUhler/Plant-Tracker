@@ -34,6 +34,10 @@ PRE-RELEASES--
 									
 	pre-2.5.0	2/13/21			Changes in this version:
 									-UI elements will now correctly reposition and resize depending on the device being used
+									
+	pre-2.5.1	2/13/21			Changes in this version:
+									-Documentation cleanup
+									-Added line in app between server information and plant information
 											
 
 FULL-RELEASES--

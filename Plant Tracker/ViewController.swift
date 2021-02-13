@@ -62,7 +62,10 @@
 //
 // pre-2.5.0	2/13/21			Changes in this version:
 //									-UI elements will now correctly reposition and resize depending on the device being used
-
+//
+// pre-2.5.1	2/13/21			Changes in this version:
+//									-Documentation cleanup
+//									-Added line in app between server information and plant information
 
 // Import libraries
 import UIKit // Basic UIKit (UI elements such as switches and buttons)
@@ -112,6 +115,9 @@ class ViewController: UIViewController {
 		
 		super.viewDidLoad()
 		
+		// Add in a line
+		displayClearRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
+		
 	}
 	// end: func viewDidLoad
 	
@@ -136,11 +142,11 @@ class ViewController: UIViewController {
 	// Returns--
 	// None
 	//
-	func displayClearRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
+	func displayClearRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
 		
 		let rect = CGRect(x: x, y: y, width: w, height: h)
 		let view = UIView(frame: rect)
-		view.backgroundColor = UIColor.white
+		view.backgroundColor = color
 
 		self.view.addSubview(view)
 		
@@ -275,7 +281,7 @@ class ViewController: UIViewController {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15)
+			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15, color: UIColor.white)
 			// Tell the user they have connected
 			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
 			
@@ -291,7 +297,7 @@ class ViewController: UIViewController {
 				sender.setOn(false, animated: true)
 				
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 200, h: 15)
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 200, h: 15, color: UIColor.white)
 				
 				if (error == nil) {
 					// If the client disconnected on their own with the button
