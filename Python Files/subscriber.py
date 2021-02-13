@@ -39,6 +39,29 @@ def connectionStatus(client, userdata, flags, rc):
 
 
 # ======================================================================
+# def publishMessage
+#
+# Publish an outgoing message with correct formatting
+#
+# Arguments--
+#
+# msgID:        the ID of the message being sent
+#
+# clientName:   the name of the client sending the message
+#
+# payload:      the contents of the message
+#
+# Returns--
+#
+# None
+#
+def publishMessage(msgID, clientName, payload):
+    newMsg = "ID:" + msgID + ";clientName:" + clientName + ";payload:" + payload
+    publish.single(serverFrom, newMsg, hostname = serverAddress)
+# end: def publishMessage
+
+
+# ======================================================================
 # def messageDecoder
 #
 # Decode a message recieved from the topic
@@ -67,11 +90,11 @@ def messageDecoder(client, userdata, msg):
     payload = msgElements[-1].split(":")
     
     # If the client wants the plant data
-    if (payload == "requestPlantData"):
+    if (payload[-1] == "requestPlantData"): 
         # Publish the up-to-date plant data here
-        publish.single(serverFrom, "ID: 0; client: Joffy-RPI3B+; payload: data requested", hostname = serverAddress)
+        publishMessage("0", "Joffy-RPI3B+", "data requested")
         
-    print(f"New message \"{payload}\" from client {client} with ID {ID}")
+    print("New message \"" + payload[-1] + "\" from client " + client[-1] + " with ID " + ID[-1])
 # end: def messageDecoder
 
 

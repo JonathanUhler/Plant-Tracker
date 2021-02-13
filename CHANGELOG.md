@@ -27,6 +27,10 @@ PRE-RELEASES--
 	pre-2.3.0	2/13/21			Changes in this version:
 									-Added alert system to addPlant function
 									-Tweaked the way the server connection status is displayed
+									
+	pre-2.4.0	2/13/21			Changes in this version:
+									-Added decodeIncomingMsg and publishOutgoingMsg functions
+									-Changed the way messages are sent and received
 											
 
 FULL-RELEASES--

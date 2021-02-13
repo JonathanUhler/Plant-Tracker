@@ -55,6 +55,10 @@
 // pre-2.3.0	2/13/21			Changes in this version:
 //									-Added alert system to addPlant function
 //									-Tweaked the way the server connection status is displayed
+//
+// pre-2.4.0	2/13/21			Changes in this version:
+//									-Added decodeIncomingMsg and publishOutgoingMsg functions
+//									-Changed the way messages are sent and received
 
 
 
@@ -171,6 +175,62 @@ class ViewController: UIViewController {
 		self.view.addSubview(textLabel)
 		
 	} // end: func displayText
+	
+	
+	// ====================================================================================================
+	// MARK: func decodeIncomingMsg
+	//
+	// Decodes messages sent from the raspberry pi or other clients and returns only the message (optional -
+	// certain clients can also be ignored)
+	//
+	// Arguments--
+	//
+	// entireMsg:					the entire incoming message (with message ID, payload, client, etc)
+	//
+	// OPTIONAL - "ignoreClient":	an optional name of a client to ignore
+	//
+	// Returns--
+	//
+	// msg:							the payload of any not-ignored messages
+	//
+	func decodeIncomingMsg(entireMsg: String, ignoreClient: String? = nil) -> String {
+		
+		// Expected format: "ID:0;client:Joffy-iPhone;payload:test"
+		let msgElements = entireMsg.components(separatedBy: ";")
+		var ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":")
+		
+		if (client[1] == ignoreClient) {
+			return ""
+		}
+		
+		return msg[1]
+		
+	}
+	// end: func decodeIncomingMsg
+	
+	
+	// ====================================================================================================
+	// MARK: func publishOutgoingMsg
+	//
+	// Publish an outgoing message formatted in an acceptable way
+	//
+	// Arguments--
+	//
+	// msgID:		the ID of the message being sent
+	//
+	// clientName:	the name of the client publishing the message
+	//
+	// payload:		the contents of the message
+	//
+	// Returns--
+	//
+	// None
+	//
+	func publishOutgoingMsg(msgID: String, clientName: String, payload: String) {
+		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload
+		mqttClient.publish(rpi_torpi, withString: newMsg)
+	}
+	// end: func publishOutgoingMsg
 
 	
 	// ====================================================================================================
@@ -229,7 +289,7 @@ class ViewController: UIViewController {
 				sender.setOn(false, animated: true)
 				
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15)
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 200, h: 15)
 				
 				if (error == nil) {
 					// If the client disconnected on their own with the button
@@ -237,7 +297,7 @@ class ViewController: UIViewController {
 				}
 				else {
 					// If the client was forcefully disconnected
-					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 150, h: 15, msg: errorMsg, color: UIColor.red)
+					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 200, h: 15, msg: errorMsg, color: UIColor.red)
 				}
 			}
 			
@@ -269,11 +329,15 @@ class ViewController: UIViewController {
 		// Subscribe to messages coming from the raspberry pi
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		mqttClient.publish(rpi_torpi, withString: "requestPlantData")
+		publishOutgoingMsg(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "requestPlantData")
 		
-		// Print any messages
+		// Print the plant data
 		mqttClient.didReceiveMessage = { mqtt, message, id in
-			self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
+			var msg = self.decodeIncomingMsg(entireMsg: message.string!)
+			
+			if (msg == "data requested") {
+				self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
+			}
 		}
 		
 	}
