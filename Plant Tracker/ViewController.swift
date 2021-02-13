@@ -51,6 +51,10 @@
 //
 // pre-2.2.0	2/12/21			Changes in this version:
 //									-Changed the way the client pings the server to establish a connection
+//
+// pre-2.3.0	2/13/21			Changes in this version:
+//									-Added alert system to addPlant function
+//									-Tweaked the way the server connection status is displayed
 
 
 
@@ -74,8 +78,6 @@ class ViewController: UIViewController {
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
 	
-	
-	
 	// Instace of CocoaMQTT as mqttClient
 	//
 	// host:		the IP address of the host device (in this case the RP3B+)
@@ -84,6 +86,8 @@ class ViewController: UIViewController {
 	//				of the user's phone (eg "Bob's iPhone")
 	let mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: "172.20.8.47", port: 1883)
 
+	
+	
 	
 	// ====================================================================================================
 	// MARK: func viewDidLoad
@@ -208,10 +212,24 @@ class ViewController: UIViewController {
 			// Connect to the server
 			mqttClient.connect()
 			
+			// Clear any previous status message
+			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15)
+			// Tell the user they have connected
+			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
+			
 			// If the client disconnected
 			mqttClient.didDisconnect = { mqtt, error in
+				
+				// Get the error message to display as the status if needed
+				var errorMsg = "\(error)"
+				let errorMsgArray = errorMsg.components(separatedBy: "\"")
+				if (errorMsgArray.count > 2) { errorMsg = errorMsgArray[1] }
+				
+				// Turn off the switch
+				sender.setOn(false, animated: true)
+				
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15)
 				
 				if (error == nil) {
 					// If the client disconnected on their own with the button
@@ -219,14 +237,9 @@ class ViewController: UIViewController {
 				}
 				else {
 					// If the client was forcefully disconnected
-					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 150, h: 15, msg: "Forcefully disconnected", color: UIColor.red)
+					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 150, h: 15, msg: errorMsg, color: UIColor.red)
 				}
 			}
-			
-			// Clear any previous status message
-			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 120, h: 15)
-			// Tell the user they have connected
-			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
 			
 		}
 		else { // Else if the switch is not on (it is off)
@@ -282,6 +295,38 @@ class ViewController: UIViewController {
 	//
 	@IBAction func addPlant(_ sender: UIButton) {
 		
+		// Create a new alert controller and specify the title and message
+		let alertController = UIAlertController(title: "New Plant", message: "Enter plant and sensor details", preferredStyle: .alert)
+		
+		// Add in an action for the confirm button and code to run when this button is pressed
+		let confirmAction = UIAlertAction(title: "Add", style: .default) { (_) in
+			
+			// Get the text from the input boxes
+			let plantName = alertController.textFields?[0].text
+			let sensorID = alertController.textFields?[1].text
+			
+			print("New plant added with name \(plantName) and sensor ID \(sensorID)")
+			
+		}
+		
+		// Cancel button does nothing
+		let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
+		
+		// Add text fields
+		alertController.addTextField { (textField) in
+			textField.placeholder = "Plant name"
+		}
+		alertController.addTextField { (textField) in
+			textField.placeholder = "Sensor ID/port"
+		}
+		
+		// Add the buttons
+		alertController.addAction(confirmAction)
+		alertController.addAction(cancelAction)
+		
+		// Show the alert
+		self.present(alertController, animated: true, completion: nil)
+				
 	}
 	// end: func addPlant
 	

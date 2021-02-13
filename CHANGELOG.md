@@ -23,6 +23,10 @@ PRE-RELEASES--
 									
 	pre-2.2.0	2/12/21			Changes in this version:
 									-Changed the way the client pings the server to establish a connection
+									
+	pre-2.3.0	2/13/21			Changes in this version:
+									-Added alert system to addPlant function
+									-Tweaked the way the server connection status is displayed
 											
 
 FULL-RELEASES--
