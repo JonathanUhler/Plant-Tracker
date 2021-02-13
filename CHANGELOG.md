@@ -31,6 +31,9 @@ PRE-RELEASES--
 	pre-2.4.0	2/13/21			Changes in this version:
 									-Added decodeIncomingMsg and publishOutgoingMsg functions
 									-Changed the way messages are sent and received
+									
+	pre-2.5.0	2/13/21			Changes in this version:
+									-UI elements will now correctly reposition and resize depending on the device being used
 											
 
 FULL-RELEASES--

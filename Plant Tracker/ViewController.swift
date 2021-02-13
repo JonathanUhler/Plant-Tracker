@@ -38,7 +38,7 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-//	pre-1.0.0	2/10/21			First working version of Plant Tracker
+//	pre-1.0.0	2/10/21			First buildable version of Plant Tracker
 //
 //	pre-2.0.0	2/11/21			Changes in this version:
 //									-Added app icons
@@ -59,7 +59,9 @@
 // pre-2.4.0	2/13/21			Changes in this version:
 //									-Added decodeIncomingMsg and publishOutgoingMsg functions
 //									-Changed the way messages are sent and received
-
+//
+// pre-2.5.0	2/13/21			Changes in this version:
+//									-UI elements will now correctly reposition and resize depending on the device being used
 
 
 // Import libraries
