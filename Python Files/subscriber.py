@@ -58,19 +58,20 @@ def connectionStatus(client, userdata, flags, rc):
 def messageDecoder(client, userdata, msg):
     
     # Decode the message
-    message = msg.payload.decode(encoding='UTF-8')
+    entireMsg = msg.payload.decode(encoding='UTF-8')
+
+    # Expected format: "ID: 0; client: Joffy-iPhone; payload: test"
+    msgElements = entireMsg.split(";")
+    ID = msgElements[0].split(":")
+    client = msgElements[1].split(":")
+    payload = msgElements[-1].split(":")
     
     # If the client wants the plant data
-    if (message == "requestPlantData"):
+    if (payload == "requestPlantData"):
         # Publish the up-to-date plant data here
-        publish.single(serverFrom, "data requested", hostname = serverAddress)
+        publish.single(serverFrom, "ID: 0; client: Joffy-RPI3B+; payload: data requested", hostname = serverAddress)
         
-    elif (message == "ping"):
-        # Acknowledge the ping
-        publish.single(serverFrom, "pingAcknowledged", hostname = serverAddress)
-        
-        
-    print("NEW MESSAGE: \"" + message + "\"")
+    print(f"New message \"{payload}\" from client {client} with ID {ID}")
 # end: def messageDecoder
 
 
