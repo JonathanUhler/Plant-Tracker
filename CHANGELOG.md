@@ -44,6 +44,12 @@ PRE-RELEASES--
 									
 	pre-2.6.1	2/13/21			Changes in this version:
 									-Fixed UILabel text alignment
+									
+	pre-3.0.0	2/14/21			Changes in this version:
+									-Changed the way data is handled and stored on the server-side
+									-Changed the outgoing and incoming message functions on both the iOS and server-side
+									-Added in DOCUMENTATION.md to provide clear documentation and conventions
+									-Added the "request" or "respond" argument to all messages
 											
 
 FULL-RELEASES--

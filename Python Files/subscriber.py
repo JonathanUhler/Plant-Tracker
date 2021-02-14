@@ -9,6 +9,7 @@ import paho.mqtt.publish as publish # Import mqtt
 serverAddress = "172.20.8.47"
 serverTo = "rpi/torpi"
 serverFrom = "rpi/fromrpi"
+serverName = "Host-RPI3B+"
 
 
 # ======================================================================
@@ -39,7 +40,7 @@ def connectionStatus(client, userdata, flags, rc):
 
 
 # ======================================================================
-# def publishMessage
+# def publishOutgoingResponse
 #
 # Publish an outgoing message with correct formatting
 #
@@ -55,14 +56,14 @@ def connectionStatus(client, userdata, flags, rc):
 #
 # None
 #
-def publishMessage(msgID, clientName, payload):
-    newMsg = "ID:" + msgID + ";clientName:" + clientName + ";payload:" + payload
+def publishOutgoingResponse(msgID, clientName, payload, respond):
+    newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";respond:" + respond
     publish.single(serverFrom, newMsg, hostname = serverAddress)
 # end: def publishMessage
 
 
 # ======================================================================
-# def messageDecoder
+# def decodeIncomingRequest
 #
 # Decode a message recieved from the topic
 #
@@ -78,35 +79,45 @@ def publishMessage(msgID, clientName, payload):
 #
 # None
 #
-def messageDecoder(client, userdata, msg):
+def decodeIncomingRequest(client, userdata, msg):
     
     # Decode the message
     entireMsg = msg.payload.decode(encoding='UTF-8')
-
-    # Expected format: "ID: 0; client: Joffy-iPhone; payload: test"
+    
     msgElements = entireMsg.split(";")
     ID = msgElements[0].split(":")
     client = msgElements[1].split(":")
-    payload = msgElements[-1].split(":")
+    payload = msgElements[2].split(":")
+    request = msgElements[3].split(":")
     
-    # If the client wants the plant data
-    if (payload[-1] == "requestPlantData"): 
-        # Publish the up-to-date plant data here
-        publishMessage("0", "Joffy-RPI3B+", "data requested")
+    # Create a hash of the message
+    msgHash = {
+        ID[0]       :   ID[1],
+        client[0]   :   client[1],
+        payload[0]  :   payload[1],
+        request[0]  :   request[1]
+    }
+    
+    # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
+    if (msgHash["client"] != serverName):
+        # If the client wants the plant data
+        if (msgHash["request"] == "requestPlantData"): 
+            # Publish the up-to-date plant data here
+            publishOutgoingResponse("0", serverName, "data requested", "RES_requestPlantData")
         
-    print("New message \"" + payload[-1] + "\" from client " + client[-1] + " with ID " + ID[-1])
-# end: def messageDecoder
+    print("New request " + request[-1] + " with payload \"" + payload[-1] + "\" from client " + client[-1] + " with ID " + ID[-1])
+# end: def decodeIncomingRequest
 
 
 # Set client name (of the raspberry pi)
-clientName = "Joffy-RPI3B+"
+clientName = serverName
 
 # Instate Eclipse Paho as mqttClient
 mqttClient = mqtt.Client(clientName)
 
 # Set calling functions to mqttClient
-mqttClient.on_connect = connectionStatus # Called when a device connects
-mqttClient.on_message = messageDecoder # Called when a message is recieved
+mqttClient.on_connect = connectionStatus # Called when the RPI
+mqttClient.on_message = decodeIncomingRequest # Called when a message is recieved
 
 # Connect client to Server
 mqttClient.connect(serverAddress)

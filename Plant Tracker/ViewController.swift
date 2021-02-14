@@ -57,7 +57,7 @@
 //									-Tweaked the way the server connection status is displayed
 //
 // pre-2.4.0	2/13/21			Changes in this version:
-//									-Added decodeIncomingMsg and publishOutgoingMsg functions
+//									-Added decodeIncomingResponse and publishOutgoingRequest functions
 //									-Changed the way messages are sent and received
 //
 // pre-2.5.0	2/13/21			Changes in this version:
@@ -72,6 +72,12 @@
 //
 // pre-2.6.1	2/13/21			Changes in this version:
 //									-Fixed UILabel text alignment
+//
+// pre-3.0.0	2/14/21			Changes in this version:
+//									-Changed the way data is handled and stored on the server-side
+//									-Changed the outgoing and incoming message functions on both the iOS and server-side
+//									-Added in DOCUMENTATION.md to provide clear documentation and conventions
+//									-Added the "request" or "respond" argument to all messages
 
 // Import libraries
 import UIKit // Basic UIKit (UI elements such as switches and buttons)
@@ -184,6 +190,7 @@ class ViewController: UIViewController {
 	// color:	The color of the text
 	//
 	// Returns--
+	//
 	// None
 	//
 	func displayText(x: Int, y: Int, w: Int, h: Int, msg: String, color: UIColor) {
@@ -200,7 +207,7 @@ class ViewController: UIViewController {
 	
 	
 	// ====================================================================================================
-	// MARK: func decodeIncomingMsg
+	// MARK: func decodeIncomingResponse
 	//
 	// Decodes messages sent from the raspberry pi or other clients and returns only the message (optional -
 	// certain clients can also be ignored)
@@ -215,24 +222,24 @@ class ViewController: UIViewController {
 	//
 	// msg:							the payload of any not-ignored messages
 	//
-	func decodeIncomingMsg(entireMsg: String, ignoreClient: String? = nil) -> String {
+	func decodeIncomingResponse(entireMsg: String, ignoreClient: String? = nil) -> [String] {
 		
-		// Expected format: "ID:0;client:Joffy-iPhone;payload:test"
+		// Expected format: "ID:0;client:Joffy-iPhone;payload:test;request:addPlant"
 		let msgElements = entireMsg.components(separatedBy: ";")
-		let ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":")
+		let ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":"), respond = msgElements[3].components(separatedBy: ":")
 		
 		if (client[1] == ignoreClient) {
-			return ""
+			return [""]
 		}
 		
-		return msg[1]
+		return msg[1].components(separatedBy: ",")
 		
 	}
-	// end: func decodeIncomingMsg
+	// end: func decodeIncomingResponse
 	
 	
 	// ====================================================================================================
-	// MARK: func publishOutgoingMsg
+	// MARK: func publishOutgoingRequest
 	//
 	// Publish an outgoing message formatted in an acceptable way
 	//
@@ -248,11 +255,11 @@ class ViewController: UIViewController {
 	//
 	// None
 	//
-	func publishOutgoingMsg(msgID: String, clientName: String, payload: String) {
-		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload
+	func publishOutgoingRequest(msgID: String, clientName: String, payload: String, request: String) {
+		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";request:" + request
 		mqttClient.publish(rpi_torpi, withString: newMsg)
 	}
-	// end: func publishOutgoingMsg
+	// end: func publishOutgoingRequest
 
 	
 	// ====================================================================================================
@@ -362,13 +369,13 @@ class ViewController: UIViewController {
 		// Subscribe to messages coming from the raspberry pi
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		publishOutgoingMsg(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "requestPlantData")
+		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", request: "requestPlantData")
 		
 		// Print the plant data
 		mqttClient.didReceiveMessage = { mqtt, message, id in
-			let msg = self.decodeIncomingMsg(entireMsg: message.string!)
+			let msg = self.decodeIncomingResponse(entireMsg: message.string!)
 			
-			if (msg == "data requested") {
+			if (msg[0] == "data requested") {
 				self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
 			}
 		}
@@ -427,7 +434,5 @@ class ViewController: UIViewController {
 	}
 	// end: func addPlant
 	
-	
 }
 // end: class ViewController
-
