@@ -41,6 +41,9 @@ PRE-RELEASES--
 									
 	pre-2.6.0	2/13/21			Changes in this version:
 									-Added in support for changing the host IP address
+									
+	pre-2.6.1	2/13/21			Changes in this version:
+									-Fixed UILabel text alignment
 											
 
 FULL-RELEASES--

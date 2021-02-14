@@ -69,6 +69,9 @@
 //
 // pre-2.6.0	2/13/21			Changes in this version:
 //									-Added in support for changing the host IP address
+//
+// pre-2.6.1	2/13/21			Changes in this version:
+//									-Fixed UILabel text alignment
 
 // Import libraries
 import UIKit // Basic UIKit (UI elements such as switches and buttons)
@@ -188,7 +191,7 @@ class ViewController: UIViewController {
 		let textRect: CGRect = CGRect(x: x, y: y, width: w, height: h)
 		let textLabel: UILabel = UILabel(frame: textRect)
 		textLabel.text = msg
-		textLabel.textAlignment = .center
+		textLabel.textAlignment = .left
 		textLabel.font = UIFont(name: "Gill Sans", size: 15)
 		textLabel.textColor = color
 		self.view.addSubview(textLabel)
