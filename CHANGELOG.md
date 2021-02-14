@@ -38,6 +38,9 @@ PRE-RELEASES--
 	pre-2.5.1	2/13/21			Changes in this version:
 									-Documentation cleanup
 									-Added line in app between server information and plant information
+									
+	pre-2.6.0	2/13/21			Changes in this version:
+									-Added in support for changing the host IP address
 											
 
 FULL-RELEASES--

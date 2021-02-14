@@ -66,6 +66,9 @@
 // pre-2.5.1	2/13/21			Changes in this version:
 //									-Documentation cleanup
 //									-Added line in app between server information and plant information
+//
+// pre-2.6.0	2/13/21			Changes in this version:
+//									-Added in support for changing the host IP address
 
 // Import libraries
 import UIKit // Basic UIKit (UI elements such as switches and buttons)
@@ -77,7 +80,6 @@ import CocoaMQTT // MQTT server support
 //
 class ViewController: UIViewController {
 	
-	
 	// MARK: Init Class Variables
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -86,6 +88,8 @@ class ViewController: UIViewController {
 	// Declare the topics used to send and receive data
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
+	// Host IP address
+	var hostAddress = ""
 	
 	// Instace of CocoaMQTT as mqttClient
 	//
@@ -93,8 +97,7 @@ class ViewController: UIViewController {
 	// port:		the port used by the host (1883 is standard for MQTT)
 	// clientID:	the name of the client requesting to connect --> UIDevice.current.name is the name
 	//				of the user's phone (eg "Bob's iPhone")
-	let mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: "172.20.8.47", port: 1883)
-
+	var mqttClient: CocoaMQTT = CocoaMQTT(clientID: UIDevice.current.name, host: "", port: 1883)
 	
 	
 	
@@ -115,8 +118,16 @@ class ViewController: UIViewController {
 		
 		super.viewDidLoad()
 		
+		// Init the host address
+		hostAddress = UserDefaults.standard.string(forKey: "hostAddress") ?? ""
+		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883)
+		
 		// Add in a line
 		displayClearRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
+		
+		// Deal with the getHostIP function --> when the user taps, close the keyboard
+		let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
+		view.addGestureRecognizer(tap)
 		
 	}
 	// end: func viewDidLoad
@@ -205,7 +216,7 @@ class ViewController: UIViewController {
 		
 		// Expected format: "ID:0;client:Joffy-iPhone;payload:test"
 		let msgElements = entireMsg.components(separatedBy: ";")
-		var ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":")
+		let ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":")
 		
 		if (client[1] == ignoreClient) {
 			return ""
@@ -255,7 +266,10 @@ class ViewController: UIViewController {
 	// None
 	//
 	@IBAction func getHostIP(_ sender: UITextField) {
-		
+		let newIP = "\(sender.text)"
+		hostAddress = newIP.components(separatedBy: "\"")[1] // Get the new IP
+		UserDefaults.standard.setValue(hostAddress, forKey: "hostAddress")
+		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883) // Try to connect to the new address
 	}
 	// end: func getHostIP
 	
@@ -281,31 +295,39 @@ class ViewController: UIViewController {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 160, h: 15, color: UIColor.white)
+			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
 			// Tell the user they have connected
 			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
 			
+			if (hostAddress == "") {
+				// Clear any previous status message
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				// Tell the user there is no host address
+				self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 120, h: 15, msg: "No host address", color: UIColor.red)
+				// Turn off the switch
+				sender.setOn(false, animated: true)
+			}
+			
 			// If the client disconnected
 			mqttClient.didDisconnect = { mqtt, error in
-				
 				// Get the error message to display as the status if needed
-				var errorMsg = "\(error)"
+				var errorMsg = "\(String(describing: error))"
 				let errorMsgArray = errorMsg.components(separatedBy: "\"")
-				if (errorMsgArray.count > 2) { errorMsg = errorMsgArray[1] }
+				if (errorMsgArray.count > 1) { errorMsg = errorMsgArray[1] }
 				
 				// Turn off the switch
 				sender.setOn(false, animated: true)
-				
+	
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 200, h: 15, color: UIColor.white)
-				
+				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				// Tell the user the disconnection status
 				if (error == nil) {
 					// If the client disconnected on their own with the button
 					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Disconnected", color: UIColor.black)
 				}
 				else {
 					// If the client was forcefully disconnected
-					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 200, h: 15, msg: errorMsg, color: UIColor.red)
+					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: Int(self.screenWidth), h: 15, msg: errorMsg, color: UIColor.red)
 				}
 			}
 			
@@ -341,7 +363,7 @@ class ViewController: UIViewController {
 		
 		// Print the plant data
 		mqttClient.didReceiveMessage = { mqtt, message, id in
-			var msg = self.decodeIncomingMsg(entireMsg: message.string!)
+			let msg = self.decodeIncomingMsg(entireMsg: message.string!)
 			
 			if (msg == "data requested") {
 				self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
