@@ -13,6 +13,30 @@ serverName = "Host-RPI3B+"
 
 
 # ======================================================================
+# Request Tag Functions---
+
+# ======================================================================
+# def requestPlantData
+#
+# Request tag for requestPlantData
+#
+# Arguments--
+#
+# None
+#
+# Returns--
+#
+# None
+#
+def requestPlantData():
+    
+    # check for required keys in hash
+    publishOutgoingResponse("0", serverName, "data requested", "RES_plantData")
+# end: def requestPlantData
+
+
+
+# ======================================================================
 # def connectionStatus
 #
 # Subscribes the RPI to the topic "rpi/to" which handles data from the
@@ -52,12 +76,14 @@ def connectionStatus(client, userdata, flags, rc):
 #
 # payload:      the contents of the message
 #
+# operation:    the request or response
+#
 # Returns--
 #
 # None
 #
-def publishOutgoingResponse(msgID, clientName, payload, respond):
-    newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";respond:" + respond
+def publishOutgoingResponse(msgID, clientName, payload, operation):
+    newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";operation:" + operation
     publish.single(serverFrom, newMsg, hostname = serverAddress)
 # end: def publishMessage
 
@@ -85,28 +111,33 @@ def decodeIncomingRequest(client, userdata, msg):
     entireMsg = msg.payload.decode(encoding='UTF-8')
     
     msgElements = entireMsg.split(";")
-    ID = msgElements[0].split(":")
-    client = msgElements[1].split(":")
-    payload = msgElements[2].split(":")
-    request = msgElements[3].split(":")
+    msgHash = {}
     
-    # Create a hash of the message
-    msgHash = {
-        ID[0]       :   ID[1],
-        client[0]   :   client[1],
-        payload[0]  :   payload[1],
-        request[0]  :   request[1]
-    }
+    for i in msgElements:
+        keyValue = i.split(":")
+        key = keyValue[0]
+        value = keyValue[1]
+        
+        msgHash[key] = value # NOTE: need to make sure there is only ONE key and ONE value for each entry
+    
+    # NOTE: verify all elements of the above hash are valid
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
     if (msgHash["client"] != serverName):
-        # If the client wants the plant data
-        if (msgHash["request"] == "requestPlantData"): 
-            # Publish the up-to-date plant data here
-            publishOutgoingResponse("0", serverName, "data requested", "RES_requestPlantData")
         
-    print("New request " + request[-1] + " with payload \"" + payload[-1] + "\" from client " + client[-1] + " with ID " + ID[-1])
+        # Hash to handle request tags
+        requestTagHash = {
+            "REQ_plantData"      :   requestPlantData()
+        }
+        
+        # Figure out if the request is valid (is it in the hash above?) and call the associated function
+        if (msgHash["operation"] in requestTagHash):
+            requestTagHash[msgHash["operation"]]
+        # NOTE: if key not valid, throw tag error
+        
+    print("New operation " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\" from client " + msgHash["client"] + " with ID " + msgHash["ID"])
 # end: def decodeIncomingRequest
+
 
 
 # Set client name (of the raspberry pi)

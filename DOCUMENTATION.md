@@ -14,7 +14,7 @@ Client: any iOS device connected or trying to connect to the server
 
 Client name: a name or ID given to each client to differentiate them
 
-Request/response: a specific string sent or received to ease the tranfer of data (see "Requests and Responses" below)
+Operation: a specific string sent or received (also known as requests and responses) to ease the tranfer of data (see "Operation Tags" below)
 
 Payload: Any additional information that comes with a request or response
 
@@ -26,21 +26,19 @@ Transactions include both messages back and forth between a client iOS device th
 Both the "subscriber.py" and "ViewController.swift" files have two functions to handle message I/O. On the RPI, these are called "decodeIncomingRequest" and "publishOutgoingResponse." On any iOS device, they are called "decodeIncomingResponse" and "publishOutgoingRequest"
 
 
-# Formatting Requests and Responses
+# Formatting Operations
 
-Requests and responses are made up of four elements: a message ID, client name, payload, and a request or response tag.
+Requests and responses (operations) are made up of four elements: a message ID, client name, payload, and a request or response tag.
 
 The expected format for a request or response is:
 
 ```
-// Request
-"ID:<id here>;client:<client identifier here>;payload:<payload here>;request:<request tag here>"
-
-// Response
-"ID:<id here>;client:<client identifier here>;payload:<payload here>;response:<response tag here>"
+"ID:<id here>;client:<client identifier here>;payload:<payload here>;operation:<request or response tag here>"
 ```
 
-The keys are not case sensitive (ID is the same as id). There should be no spaces between semicolons or colons (however if a payload has spaces, that is acceptable). Keys and their values should be seperated by colons (:) and different sets of keys/values should be seperated by semicolons (;)
+The keys are case sensitive (id is not the same as ID and will throw an error). There should be no spaces between semicolons or colons (however if a payload has spaces, that is acceptable). Keys and their values should be seperated by colons (:) and different sets of keys/values should be seperated by semicolons (;)
+
+Because the operation key is just "operation," request operations are titled with the prefix "REQ_" and response operations are titled with the prefix "RES_"
 
 
 # Request and Response Tags
@@ -50,7 +48,7 @@ When sending a request of response, one of a number of "tags" can be used. On th
 A list of the tags and their meanings is:
 
 ```
-Request : "requestPlantData" // A request that asks the server for sensor information about the plants. The payload included in a transaction with this request can specify which plant should be updated
+Request : "REQ_plantData" // A request that asks the server for sensor information about the plants. The payload included in a transaction with this request can specify which plant should be updated
 
-Respnse	: "RES_requestPlantData" // A response that is attached to a message with plant data. This response follows the request "requestPlantData." The payload includes the data for all plants or a single specified plant
+Response : "RES_plantData" // A response that is attached to a message with plant data. This response follows the request "REQ_plantData." The payload includes the data for all plants or a single specified plant
 ```

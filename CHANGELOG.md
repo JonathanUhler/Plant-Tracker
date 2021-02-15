@@ -50,6 +50,10 @@ PRE-RELEASES--
 									-Changed the outgoing and incoming message functions on both the iOS and server-side
 									-Added in DOCUMENTATION.md to provide clear documentation and conventions
 									-Added the "request" or "respond" argument to all messages
+									
+	pre-3.0.1	2/14/21			Changes in this version:
+									-Fixed the way data is handled on server-side
+									-Updated documentation; added TO-DO list
 											
 
 FULL-RELEASES--

@@ -78,6 +78,19 @@
 //									-Changed the outgoing and incoming message functions on both the iOS and server-side
 //									-Added in DOCUMENTATION.md to provide clear documentation and conventions
 //									-Added the "request" or "respond" argument to all messages
+// pre-3.0.1	2/14/21			Changes in this version:
+//									-Fixed the way data is handled on server-side
+//									-Updated documentation; added TO-DO list
+
+
+// TO-DO--
+//
+// 1) Add in support for hashes on the iOS side in the incoming and outgoing message functions
+// 2) Add error handling on the server-side
+//	a) Line 119: make sure there is only 1 key and 1 value for each key/value set in the hash
+//	b) Line 134: make sure the operation tag is valid; if not throw an error
+//	c) Some sort of UI to show user's errors? -> maybe
+
 
 // Import libraries
 import UIKit // Basic UIKit (UI elements such as switches and buttons)
@@ -251,12 +264,14 @@ class ViewController: UIViewController {
 	//
 	// payload:		the contents of the message
 	//
+	// operation:	the request or response
+	//
 	// Returns--
 	//
 	// None
 	//
-	func publishOutgoingRequest(msgID: String, clientName: String, payload: String, request: String) {
-		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";request:" + request
+	func publishOutgoingRequest(msgID: String, clientName: String, payload: String, operation: String) {
+		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";operation:" + operation
 		mqttClient.publish(rpi_torpi, withString: newMsg)
 	}
 	// end: func publishOutgoingRequest
@@ -369,7 +384,7 @@ class ViewController: UIViewController {
 		// Subscribe to messages coming from the raspberry pi
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", request: "requestPlantData")
+		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", operation: "REQ_plantData")
 		
 		// Print the plant data
 		mqttClient.didReceiveMessage = { mqtt, message, id in
