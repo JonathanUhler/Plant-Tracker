@@ -81,15 +81,19 @@
 // pre-3.0.1	2/14/21			Changes in this version:
 //									-Fixed the way data is handled on server-side
 //									-Updated documentation; added TO-DO list
+//
+// pre-3.1.0	2/14/21			Changes in this version:
+//									-Added support for hashes on the iOS side
 
 
 // TO-DO--
 //
-// 1) Add in support for hashes on the iOS side in the incoming and outgoing message functions
-// 2) Add error handling on the server-side
+// 1) Add error handling on the server-side
 //	a) Line 119: make sure there is only 1 key and 1 value for each key/value set in the hash
 //	b) Line 134: make sure the operation tag is valid; if not throw an error
 //	c) Some sort of UI to show user's errors? -> maybe
+// 2) Add error handling on the iOS-side
+// 3) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 
 
 // Import libraries
@@ -237,15 +241,22 @@ class ViewController: UIViewController {
 	//
 	func decodeIncomingResponse(entireMsg: String, ignoreClient: String? = nil) -> [String] {
 		
-		// Expected format: "ID:0;client:Joffy-iPhone;payload:test;request:addPlant"
-		let msgElements = entireMsg.components(separatedBy: ";")
-		let ID = msgElements[0].components(separatedBy: ":"), client = msgElements[1].components(separatedBy: ":"), msg = msgElements[2].components(separatedBy: ":"), respond = msgElements[3].components(separatedBy: ":")
+		// Init an empty hash an a list of the key/value pairs
+		let msgElements = entireMsg.split(separator: ";")
+		var msgHash: [String:String] = [:]
 		
-		if (client[1] == ignoreClient) {
-			return [""]
+		// Place the keys and values into the hash from above
+		for (i) in msgElements {
+			// Get the keys and values
+			let keyValue = i.split(separator: ":")
+			let key = keyValue[0]
+			let value = keyValue[1]
+			// Add them to the hash
+			msgHash[String(key)] = String(value)
 		}
 		
-		return msg[1].components(separatedBy: ",")
+		// Return the payload and operation tag in format "[<payload>, [tag]]"
+		return [String(msgHash["payload"]!), String(msgHash["operation"]!)]
 		
 	}
 	// end: func decodeIncomingResponse

@@ -54,6 +54,9 @@ PRE-RELEASES--
 	pre-3.0.1	2/14/21			Changes in this version:
 									-Fixed the way data is handled on server-side
 									-Updated documentation; added TO-DO list
+									
+	pre-3.1.0	2/14/21			Changes in this version:
+									-Added support for hashes on the iOS side
 											
 
 FULL-RELEASES--

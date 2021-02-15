@@ -29,8 +29,6 @@ serverName = "Host-RPI3B+"
 # None
 #
 def requestPlantData():
-    
-    # check for required keys in hash
     publishOutgoingResponse("0", serverName, "data requested", "RES_plantData")
 # end: def requestPlantData
 
