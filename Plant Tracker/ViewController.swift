@@ -84,16 +84,15 @@
 //
 // pre-3.1.0	2/14/21			Changes in this version:
 //									-Added support for hashes on the iOS side
+//
+// pre-3.2.0	2/15/21			Changes in this version:
+//									-Added error handling on the server and iOS side
+//									-Updated documentation
 
 
 // TO-DO--
 //
-// 1) Add error handling on the server-side
-//	a) Line 119: make sure there is only 1 key and 1 value for each key/value set in the hash
-//	b) Line 134: make sure the operation tag is valid; if not throw an error
-//	c) Some sort of UI to show user's errors? -> maybe
-// 2) Add error handling on the iOS-side
-// 3) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
+// 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 
 
 // Import libraries
@@ -255,8 +254,8 @@ class ViewController: UIViewController {
 			msgHash[String(key)] = String(value)
 		}
 		
-		// Return the payload and operation tag in format "[<payload>, [tag]]"
-		return [String(msgHash["payload"]!), String(msgHash["operation"]!)]
+		// Return the response information
+		return [String(msgHash["ID"]!), String(msgHash["client"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)]
 		
 	}
 	// end: func decodeIncomingResponse
@@ -302,7 +301,7 @@ class ViewController: UIViewController {
 	// None
 	//
 	@IBAction func getHostIP(_ sender: UITextField) {
-		let newIP = "\(sender.text)"
+		let newIP = "\(String(describing: sender.text))"
 		hostAddress = newIP.components(separatedBy: "\"")[1] // Get the new IP
 		UserDefaults.standard.setValue(hostAddress, forKey: "hostAddress")
 		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883) // Try to connect to the new address
@@ -395,13 +394,13 @@ class ViewController: UIViewController {
 		// Subscribe to messages coming from the raspberry pi
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", operation: "REQ_plantData")
+		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", operation: "REQ_plantSensorData")
 		
 		// Print the plant data
 		mqttClient.didReceiveMessage = { mqtt, message, id in
 			let msg = self.decodeIncomingResponse(entireMsg: message.string!)
 			
-			if (msg[0] == "data requested") {
+			if (msg[2] == "data requested" && msg[1] == "Host-RPI3B+") {
 				self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
 			}
 		}
@@ -435,7 +434,7 @@ class ViewController: UIViewController {
 			let plantName = alertController.textFields?[0].text
 			let sensorID = alertController.textFields?[1].text
 			
-			print("New plant added with name \(plantName) and sensor ID \(sensorID)")
+			print("New plant added with name \(String(describing: plantName)) and sensor ID \(String(describing: sensorID))")
 			
 		}
 		

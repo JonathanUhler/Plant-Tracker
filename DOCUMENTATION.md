@@ -48,7 +48,33 @@ When sending a request of response, one of a number of "tags" can be used. On th
 A list of the tags and their meanings is:
 
 ```
-Request : "REQ_plantData" // A request that asks the server for sensor information about the plants. The payload included in a transaction with this request can specify which plant should be updated
+Request : "REQ_plantSensorData" // A request that asks the server for sensor information about the plants. The payload included in a transaction with this request can specify which plant should be updated
 
-Response : "RES_plantData" // A response that is attached to a message with plant data. This response follows the request "REQ_plantData." The payload includes the data for all plants or a single specified plant
+Response : "RES_plantSensorData" // A response that is attached to a message with plant data. This response follows the request "REQ_plantData." The payload includes the data for all plants or a single specified plant
+
+Request	: "REQ_plantInfoOnStartup" // Requests information such as the number of plants, plant names, etc. when the iOS app first connects
+
+Response : "RES_plantInfoOnStartup" // Gives some basic infomation about the plants (no sensor information) to the iOS client
+```
+
+
+# Operation Errors
+
+If a request of response is invalid for any reason, and error with be thrown. Both the server and iOS side have error handling functions. Errors are sent back to the initial sender with the format:
+
+```
+"ID:<message id>;client:<client identifier>;payload:<previous message that caused an error>;operation:<error tag>"
+```
+
+A list of error tags are their meanings is:
+
+```
+"ERR_hashLength" // There were either too few or too many arguments in the transaction message
+
+"ERR_missingVals" // There were more keys than values in the hash
+
+"ERR_missingKeys" // There were more values than keys in the hash
+
+"ERR_invalidOpTag" // There was an invalid operation tag
+""
 ```

@@ -57,6 +57,10 @@ PRE-RELEASES--
 									
 	pre-3.1.0	2/14/21			Changes in this version:
 									-Added support for hashes on the iOS side
+									
+	pre-3.2.0	2/15/21			Changes in this version:
+									-Added error handling on the server and iOS side
+									-Updated documentation
 											
 
 FULL-RELEASES--

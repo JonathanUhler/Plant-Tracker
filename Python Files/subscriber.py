@@ -21,7 +21,7 @@ serverName = "Host-RPI3B+"
 # Request tag for REQ_plantSensorData
 #
 def REQ_plantSensorData():
-    publishOutgoingResponse("0", serverName, "data requested", "RES_plantData")
+    publishOutgoingResponse("0", serverName, "data requested", "RES_plantSensorData")
 # end: def REQ_plantSensorData
 
 # ======================================================================
@@ -78,7 +78,7 @@ def connectionStatus(client, userdata, flags, rc):
 # None
 def operationError(error, request):
     
-    publishOutgoingResponse("0", serverName, f"{request}", error)
+    publishOutgoingResponse("0", serverName, request, error)
 
 # end: def operationError
 
@@ -107,7 +107,6 @@ def publishOutgoingResponse(msgID, clientName, payload, operation):
     publish.single(serverFrom, newMsg, hostname = serverAddress)
 # end: def publishMessage
 
-
 # ======================================================================
 # def decodeIncomingRequest
 #
@@ -129,6 +128,8 @@ def decodeIncomingRequest(client, userdata, msg):
     
     # Decode the message
     entireMsg = msg.payload.decode(encoding='UTF-8')
+    errMsg = entireMsg.replace(";", "|")
+    errMsg = errMsg.replace(":", "-")
     
     msgElements = entireMsg.split(";")
     msgHash = {}
@@ -137,8 +138,12 @@ def decodeIncomingRequest(client, userdata, msg):
         keyValue = i.split(":")
 
         # Confirm there is one key and one value only
-        if (len(keyValue) > 2): operationError("ERR_missingKeys", entireMsg)
-        elif (len(keyValue) < 2): operationError("ERR_missingVals", entireMsg)
+        if (len(keyValue) > 2): 
+            operationError("ERR_missingKeys", errMsg)
+            return
+        elif (len(keyValue) < 2): 
+            operationError("ERR_missingVals", errMsg)
+            return
 
         key = keyValue[0]
         value = keyValue[1]
@@ -146,10 +151,12 @@ def decodeIncomingRequest(client, userdata, msg):
         msgHash[key] = value
     
     # Make sure there is the reqired number of elements in the hash
-    if (not (len(msgHash) == 4)): operationError("ERR_hashLength", entireMsg)
+    if (not (len(msgHash) == 4)): 
+        operationError("ERR_hashLength", errMsg)
+        return
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
-    if (msgHash["client"] != serverName):
+    if (not msgHash["client"] == serverName):
         
         # Hash to handle request tags
         requestTagHash = {
@@ -160,7 +167,10 @@ def decodeIncomingRequest(client, userdata, msg):
         # Figure out if the request is valid (is it in the hash above?) and call the associated function
         if (msgHash["operation"] in requestTagHash):
             requestTagHash[msgHash["operation"]]
-        # NOTE: if key not valid, throw tag error
+        # If the tag is invalid, throw an error
+        else: 
+            operationError("ERR_invalidOpTag", errMsg)
+            return
         
     print("New operation " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\" from client " + msgHash["client"] + " with ID " + msgHash["ID"])
 # end: def decodeIncomingRequest
