@@ -16,21 +16,22 @@ serverName = "Host-RPI3B+"
 # Request Tag Functions---
 
 # ======================================================================
-# def requestPlantData
+# def REQ_plantSensorData
 #
-# Request tag for requestPlantData
+# Request tag for REQ_plantSensorData
 #
-# Arguments--
-#
-# None
-#
-# Returns--
-#
-# None
-#
-def requestPlantData():
+def REQ_plantSensorData():
     publishOutgoingResponse("0", serverName, "data requested", "RES_plantData")
-# end: def requestPlantData
+# end: def REQ_plantSensorData
+
+# ======================================================================
+# def REQ_plantInfoOnStartup
+#
+# Request tag for REQ_plantInfoOnStartup
+#
+def REQ_plantInfoOnStartup():
+    publishOutgoingResponse("0", serverName, "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
+# end: def REQ_plantInfoOnStartup
 
 
 
@@ -59,6 +60,27 @@ def connectionStatus(client, userdata, flags, rc):
     mqttClient.subscribe(serverTo)
     mqttClient.subscribe(serverFrom)
 # end: def connectionStatus
+
+
+# ======================================================================
+# def operationError
+#
+# Creates and throws an error if something is wrong with a request
+#
+# Arguments--
+#
+# error:    the error to throw
+#
+# request:  the hash that created the error
+#
+# Returns--
+#
+# None
+def operationError(error, request):
+    
+    publishOutgoingResponse("0", serverName, f"{request}", error)
+
+# end: def operationError
 
 
 # ======================================================================
@@ -113,19 +135,26 @@ def decodeIncomingRequest(client, userdata, msg):
     
     for i in msgElements:
         keyValue = i.split(":")
+
+        # Confirm there is one key and one value only
+        if (len(keyValue) > 2): operationError("ERR_missingKeys", entireMsg)
+        elif (len(keyValue) < 2): operationError("ERR_missingVals", entireMsg)
+
         key = keyValue[0]
         value = keyValue[1]
         
-        msgHash[key] = value # NOTE: need to make sure there is only ONE key and ONE value for each entry
+        msgHash[key] = value
     
-    # NOTE: verify all elements of the above hash are valid
+    # Make sure there is the reqired number of elements in the hash
+    if (not (len(msgHash) == 4)): operationError("ERR_hashLength", entireMsg)
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
     if (msgHash["client"] != serverName):
         
         # Hash to handle request tags
         requestTagHash = {
-            "REQ_plantData"      :   requestPlantData()
+            "REQ_plantSensorData"   :   REQ_plantSensorData(),
+            "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup()
         }
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function
