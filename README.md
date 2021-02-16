@@ -61,10 +61,10 @@ pip install paho-mqtt
 Compile the python file as an executable, then run it
 
 ```
-cd <location of subscriber.py file>
+cd <location of host.py file>
 
-chmod +x subscriber.py
+chmod +x host.py
 
-./subscriber.py
+./host.py
 ```
 
