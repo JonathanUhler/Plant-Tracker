@@ -55,6 +55,8 @@ Response : "RES_plantSensorData" // A response that is attached to a message wit
 Request	: "REQ_plantInfoOnStartup" // Requests information such as the number of plants, plant names, etc. when the iOS app first connects
 
 Response : "RES_plantInfoOnStartup" // Gives some basic infomation about the plants (no sensor information) to the iOS client
+
+Request : "REQ_addNewPlant" // Add a new plant with its name and sensor ID information
 ```
 
 
@@ -76,5 +78,4 @@ A list of error tags are their meanings is:
 "ERR_missingKeys" // There were more values than keys in the hash
 
 "ERR_invalidOpTag" // There was an invalid operation tag
-""
 ```

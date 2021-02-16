@@ -20,8 +20,8 @@ serverName = "Host-RPI3B+" # Emily for short
 #
 # Request tag for REQ_plantSensorData
 #
-def REQ_plantSensorData(receiver):
-    publishOutgoingResponse("0", serverName, receiver, "data requested", "RES_plantSensorData")
+def REQ_plantSensorData(msg):
+    publishOutgoingResponse("0", serverName, msg["sender"], "data requested", "RES_plantSensorData")
 # end: def REQ_plantSensorData
 
 # ======================================================================
@@ -29,9 +29,19 @@ def REQ_plantSensorData(receiver):
 #
 # Request tag for REQ_plantInfoOnStartup
 #
-def REQ_plantInfoOnStartup(receiver):
-    publishOutgoingResponse("0", serverName, receiver, "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
+def REQ_plantInfoOnStartup(msg):
+    publishOutgoingResponse("0", serverName, msg["sender"], "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
 # end: def REQ_plantInfoOnStartup
+
+# ======================================================================
+# def REQ_addNewPlant
+#
+# Request tag for REQ_addNewPlant
+#
+def REQ_addNewPlant(msg):
+    print("added plant with data: " + msg["payload"] + ", for user: " + msg["sender"])
+# end: def REQ_addNewPlant
+    
 
 
 
@@ -163,7 +173,8 @@ def decodeIncomingRequest(client, userdata, msg):
         # Hash to handle request tags
         requestTagHash = {
             "REQ_plantSensorData"   :   REQ_plantSensorData,
-            "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup
+            "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup,
+            "REQ_addNewPlant"       :   REQ_addNewPlant
         }
         
         # Ignore errors about errors to prevent bouncing back
@@ -176,7 +187,7 @@ def decodeIncomingRequest(client, userdata, msg):
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function
         if (msgHash["operation"] in requestTagHash):
-            requestTagHash[msgHash["operation"]](msgHash["sender"])
+            requestTagHash[msgHash["operation"]](msgHash)
         elif (msgHash["operation"] in dropErr):
             print("New ERROR " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\". Sender " + msgHash["sender"] + ", Receiver: " + msgHash["receiver"] + ", with ID " + msgHash["ID"])
             return

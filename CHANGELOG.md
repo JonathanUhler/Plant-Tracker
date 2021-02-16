@@ -69,6 +69,11 @@ PRE-RELEASES--
 	pre-3.4.0	2/15/21			Changes in this version:
 									-Changed host name in a comment (for M.U.)
 									-Fixed error checking
+									
+	pre-3.4.1	2/16/21			Changes in this version:
+									-Changed name of python file subscriber.py -> host.py
+									-Documentation changes
+									-Began implementation of add plant button
 											
 
 FULL-RELEASES--

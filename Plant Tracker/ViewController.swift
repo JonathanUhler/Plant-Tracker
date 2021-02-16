@@ -50,6 +50,11 @@
 // pre-3.4.0	2/15/21			Changes in this version:
 //									-Changed host name in a comment (for M.U.)
 //									-Fixed error checking
+//
+// pre-3.4.1	2/16/21			Changes in this version:
+//									-Changed name of python file subscriber.py -> host.py
+//									-Documentation changes
+//									-Began implementation of add plant button
 
 
 // TO-DO--
@@ -110,16 +115,16 @@ class ViewController: UIViewController {
 		hostAddress = UserDefaults.standard.string(forKey: "hostAddress") ?? ""
 		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883)
 		
+		let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
+		view.addGestureRecognizer(tap)
+		
+		// Constantly pay attention to incoming messages and decode them
 		mqttClient.didReceiveMessage = { mqtt, message, id in
 			self.decodeIncomingResponse(entireMsg: message.string!)
 		}
 		
 		// Add in a line
 		displayClearRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
-		
-		// Deal with the getHostIP function --> when the user taps, close the keyboard
-		let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
-		view.addGestureRecognizer(tap)
 		
 	}
 	// end: func viewDidLoad
@@ -194,9 +199,7 @@ class ViewController: UIViewController {
 	//
 	func RES_plantSensorData(msg: [String]) {
 		// Print the plant data
-		if (msg[2] == UIDevice.current.name) {
-			self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[3], color: UIColor.black)
-		}
+		self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[3], color: UIColor.black)
 	}
 	// end: func RES_plantSensorData
 	
@@ -205,9 +208,7 @@ class ViewController: UIViewController {
 	//
 	func RES_plantInfoOnStartup(msg: [String]) {
 		// Prints info like num of plants, plant names, etc
-		if (msg[2] == UIDevice.current.name) {
-			print("RES_plantInfoOnStartup")
-		}
+		print("RES_plantInfoOnStartup")
 	}
 	// RES_plantInfoOnStartup
 	
@@ -325,19 +326,22 @@ class ViewController: UIViewController {
 			"ERR_invalidOpTag"		:	-4,
 		]
 		
-		// Check if the operation tag is valid
-		if (responseTagHash.keys.contains(msgHash["operation"]!)) {
-			// Print the new message for debug
-			print("New operation \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
-			// If the tag was valid, call its associated function
-			responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["sender"]!), String(msgHash["receiver"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
-		}
-		else if (dropErr.keys.contains(msgHash["operation"]!)) {
-			print("New ERROR \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
-		}
-		else { // If the operation tag wasn't valid, throw an error
-			operationError(error: "ERR_invalidOpTag", msg: errMsg)
-			return
+		if (msgHash["receiver"] == UIDevice.current.name) {
+			// Check if the operation tag is valid
+			if (responseTagHash.keys.contains(msgHash["operation"]!)) {
+				// Print the new message for debug
+				print("New operation \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
+				// If the tag was valid, call its associated function
+				responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["sender"]!), String(msgHash["receiver"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
+			}
+			// Print any errors that were received
+			else if (dropErr.keys.contains(msgHash["operation"]!)) {
+				print("New ERROR \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
+			}
+			else { // If the operation tag wasn't valid, throw an error
+				operationError(error: "ERR_invalidOpTag", msg: errMsg)
+				return
+			}
 		}
 		
 	}
@@ -483,6 +487,7 @@ class ViewController: UIViewController {
 			let sensorID = alertController.textFields?[1].text
 			
 			print("New plant added with name \(String(describing: plantName)) and sensor ID \(String(describing: sensorID))")
+			self.publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(self.hostName)", payload: "\(String(describing: plantName)),\(String(describing: sensorID))", operation: "REQ_addNewPlant")
 			
 		}
 		
