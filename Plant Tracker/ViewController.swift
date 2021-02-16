@@ -38,56 +38,14 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-//	pre-1.0.0	2/10/21			First buildable version of Plant Tracker
-//
-//	pre-2.0.0	2/11/21			Changes in this version:
-//									-Added app icons
-//									-Added printMessage function and button to request plant data from RPI
-//									-Changed layout of elements in the storyboard
-//
-// pre-2.1.0	2/12/21			Changes in this version:
-//									-Added displayClearRect and displayText functions
-//									-Added a method of pinging the server to ensure a connection was made
-//
-// pre-2.2.0	2/12/21			Changes in this version:
-//									-Changed the way the client pings the server to establish a connection
-//
-// pre-2.3.0	2/13/21			Changes in this version:
-//									-Added alert system to addPlant function
-//									-Tweaked the way the server connection status is displayed
-//
-// pre-2.4.0	2/13/21			Changes in this version:
-//									-Added decodeIncomingResponse and publishOutgoingRequest functions
-//									-Changed the way messages are sent and received
-//
-// pre-2.5.0	2/13/21			Changes in this version:
-//									-UI elements will now correctly reposition and resize depending on the device being used
-//
-// pre-2.5.1	2/13/21			Changes in this version:
-//									-Documentation cleanup
-//									-Added line in app between server information and plant information
-//
-// pre-2.6.0	2/13/21			Changes in this version:
-//									-Added in support for changing the host IP address
-//
-// pre-2.6.1	2/13/21			Changes in this version:
-//									-Fixed UILabel text alignment
-//
-// pre-3.0.0	2/14/21			Changes in this version:
-//									-Changed the way data is handled and stored on the server-side
-//									-Changed the outgoing and incoming message functions on both the iOS and server-side
-//									-Added in DOCUMENTATION.md to provide clear documentation and conventions
-//									-Added the "request" or "respond" argument to all messages
-// pre-3.0.1	2/14/21			Changes in this version:
-//									-Fixed the way data is handled on server-side
-//									-Updated documentation; added TO-DO list
-//
-// pre-3.1.0	2/14/21			Changes in this version:
-//									-Added support for hashes on the iOS side
-//
 // pre-3.2.0	2/15/21			Changes in this version:
 //									-Added error handling on the server and iOS side
 //									-Updated documentation
+//
+// pre-3.3.0	2/15/21			Changes in this version:
+//									-Fixed issues with the server-side data structure
+//									-Changed the way responses are handled within the app
+//									-Documentation changes
 
 
 // TO-DO--
@@ -146,6 +104,10 @@ class ViewController: UIViewController {
 		// Init the host address
 		hostAddress = UserDefaults.standard.string(forKey: "hostAddress") ?? ""
 		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883)
+		
+		mqttClient.didReceiveMessage = { mqtt, message, id in
+			self.decodeIncomingResponse(entireMsg: message.string!)
+		}
 		
 		// Add in a line
 		displayClearRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
@@ -223,43 +185,43 @@ class ViewController: UIViewController {
 	
 	
 	// ====================================================================================================
-	// MARK: func decodeIncomingResponse
+	// MARK: RES_plantSensorData
 	//
-	// Decodes messages sent from the raspberry pi or other clients and returns only the message (optional -
-	// certain clients can also be ignored)
+	func RES_plantSensorData(msg: [String]) {
+		// Print the plant data
+		self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[2], color: UIColor.black)
+	}
+	// end: func RES_plantSensorData
+	
+	// ====================================================================================================
+	// MARK: RES_plantInfoOnStartup
+	//
+	func RES_plantInfoOnStartup(msg: [String]) {
+		print("RES_plantInfoOnStartup")
+	}
+	// RES_plantInfoOnStartup
+	
+	
+	// ====================================================================================================
+	// MARK: func operationError
+	//
+	// Handle errors with message formatting
 	//
 	// Arguments--
 	//
-	// entireMsg:					the entire incoming message (with message ID, payload, client, etc)
+	// error:		the error to throw
 	//
-	// OPTIONAL - "ignoreClient":	an optional name of a client to ignore
+	// msg:		the message that caused the error
 	//
 	// Returns--
 	//
-	// msg:							the payload of any not-ignored messages
+	// None
 	//
-	func decodeIncomingResponse(entireMsg: String, ignoreClient: String? = nil) -> [String] {
-		
-		// Init an empty hash an a list of the key/value pairs
-		let msgElements = entireMsg.split(separator: ";")
-		var msgHash: [String:String] = [:]
-		
-		// Place the keys and values into the hash from above
-		for (i) in msgElements {
-			// Get the keys and values
-			let keyValue = i.split(separator: ":")
-			let key = keyValue[0]
-			let value = keyValue[1]
-			// Add them to the hash
-			msgHash[String(key)] = String(value)
-		}
-		
-		// Return the response information
-		return [String(msgHash["ID"]!), String(msgHash["client"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)]
-		
+	func operationError(error: String, msg: String) {
+		publishOutgoingRequest(msgID: "0", clientName: UIDevice.current.name, payload: msg, operation: error)
 	}
-	// end: func decodeIncomingResponse
-	
+	//
+
 	
 	// ====================================================================================================
 	// MARK: func publishOutgoingRequest
@@ -285,6 +247,80 @@ class ViewController: UIViewController {
 		mqttClient.publish(rpi_torpi, withString: newMsg)
 	}
 	// end: func publishOutgoingRequest
+	
+	
+	// ====================================================================================================
+	// MARK: func decodeIncomingResponse
+	//
+	// Decodes messages sent from the raspberry pi or other clients and returns only the message (optional -
+	// certain clients can also be ignored)
+	//
+	// Arguments--
+	//
+	// entireMsg:					the entire incoming message (with message ID, payload, client, etc)
+	//
+	// OPTIONAL - "ignoreClient":	an optional name of a client to ignore
+	//
+	// Returns--
+	//
+	// msg:							the payload of any not-ignored messages
+	//
+	func decodeIncomingResponse(entireMsg: String, ignoreClient: String? = nil) {
+		
+		// Create an error message for if one is needed
+		var errMsg = entireMsg.replacingOccurrences(of: ";", with: "|")
+		errMsg = errMsg.replacingOccurrences(of: ":", with: "-")
+		// Init an empty hash an a list of the key/value pairs
+		let msgElements = entireMsg.split(separator: ";")
+		var msgHash: [String:String] = [:]
+		
+		// Place the keys and values into the hash from above
+		for (i) in msgElements {
+			// Get the keys and values
+			let keyValue = i.split(separator: ":")
+			
+			// Check for missing keys or values
+			if (keyValue.count > 2) {
+				operationError(error: "ERR_missingKeys", msg: errMsg)
+				return
+			}
+			else if (keyValue.count < 2) {
+				operationError(error: "ERR_missingVals", msg: errMsg)
+				return
+			}
+			
+			let key = keyValue[0]
+			let value = keyValue[1]
+			// Add them to the hash
+			msgHash[String(key)] = String(value)
+		}
+		
+		// Make sure there is the required number of elements in the hash
+		if (msgHash.count != 4) {
+			operationError(error: "ERR_hashLength", msg: errMsg)
+			return
+		}
+		
+		// Create a dictionary of all valid operation tags
+		let responseTagHash = [
+			"RES_plantSensorData"	:	RES_plantSensorData,
+			"RES_plantInfoOnStartup":	RES_plantInfoOnStartup
+		]
+		
+		// Check if the operation tag is valid
+		if (responseTagHash.keys.contains(msgHash["operation"]!)) {
+			// Print the new message for debug
+			print("New operation \(msgHash["operation"]) with payload \"\(msgHash["payload"])\" from client \(msgHash["client"]) with ID \(msgHash["ID"])")
+			// If the tag was valid, call its associated function
+			responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["client"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
+		}
+		else { // If the operation tag wasn't valid, throw an error
+			operationError(error: "ERR_invalidOpTag", msg: errMsg)
+			return
+		}
+		
+	}
+	// end: func decodeIncomingResponse
 
 	
 	// ====================================================================================================
@@ -395,15 +431,6 @@ class ViewController: UIViewController {
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
 		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", operation: "REQ_plantSensorData")
-		
-		// Print the plant data
-		mqttClient.didReceiveMessage = { mqtt, message, id in
-			let msg = self.decodeIncomingResponse(entireMsg: message.string!)
-			
-			if (msg[2] == "data requested" && msg[1] == "Host-RPI3B+") {
-				self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: "got data", color: UIColor.black)
-			}
-		}
 		
 	}
 	// end: func requestData

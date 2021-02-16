@@ -71,14 +71,14 @@ def connectionStatus(client, userdata, flags, rc):
 #
 # error:    the error to throw
 #
-# request:  the hash that created the error
+# msg:  the hash that created the error
 #
 # Returns--
 #
 # None
-def operationError(error, request):
+def operationError(error, msg):
     
-    publishOutgoingResponse("0", serverName, request, error)
+    publishOutgoingResponse("0", serverName, msg, error)
 
 # end: def operationError
 
@@ -160,15 +160,15 @@ def decodeIncomingRequest(client, userdata, msg):
         
         # Hash to handle request tags
         requestTagHash = {
-            "REQ_plantSensorData"   :   REQ_plantSensorData(),
-            "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup()
+            "REQ_plantSensorData"   :   REQ_plantSensorData,
+            "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup
         }
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function
-        if (msgHash["operation"] in requestTagHash):
-            requestTagHash[msgHash["operation"]]
-        # If the tag is invalid, throw an error
-        else: 
+        try:
+            requestTagHash[msgHash["operation"]]()
+        except KeyError:
+            # If the tag is invalid, throw an error
             operationError("ERR_invalidOpTag", errMsg)
             return
         

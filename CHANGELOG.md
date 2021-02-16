@@ -61,6 +61,10 @@ PRE-RELEASES--
 	pre-3.2.0	2/15/21			Changes in this version:
 									-Added error handling on the server and iOS side
 									-Updated documentation
+									
+	pre-3.3.0	2/15/21			Changes in this version:
+									-Fixed issues with the server-side data structure
+									-Changed the way responses are handled within the app
 											
 
 FULL-RELEASES--
