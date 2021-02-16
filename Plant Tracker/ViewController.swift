@@ -32,7 +32,7 @@
 
 
 // ====================================================================================================
-// Revision History
+// Revision History (see CHANGELOG.md for full history)
 //
 // PRE-RELEASES
 //
@@ -46,6 +46,10 @@
 //									-Fixed issues with the server-side data structure
 //									-Changed the way responses are handled within the app
 //									-Documentation changes
+//
+// pre-3.4.0	2/15/21			Changes in this version:
+//									-Changed host name in a comment (for M.U.)
+//									-Fixed error checking
 
 
 // TO-DO--
@@ -72,6 +76,7 @@ class ViewController: UIViewController {
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
 	// Host IP address
+	let hostName = "Host-RPI3B+"
 	var hostAddress = ""
 	
 	// Instace of CocoaMQTT as mqttClient
@@ -189,7 +194,9 @@ class ViewController: UIViewController {
 	//
 	func RES_plantSensorData(msg: [String]) {
 		// Print the plant data
-		self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[2], color: UIColor.black)
+		if (msg[2] == UIDevice.current.name) {
+			self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[3], color: UIColor.black)
+		}
 	}
 	// end: func RES_plantSensorData
 	
@@ -197,7 +204,10 @@ class ViewController: UIViewController {
 	// MARK: RES_plantInfoOnStartup
 	//
 	func RES_plantInfoOnStartup(msg: [String]) {
-		print("RES_plantInfoOnStartup")
+		// Prints info like num of plants, plant names, etc
+		if (msg[2] == UIDevice.current.name) {
+			print("RES_plantInfoOnStartup")
+		}
 	}
 	// RES_plantInfoOnStartup
 	
@@ -218,7 +228,7 @@ class ViewController: UIViewController {
 	// None
 	//
 	func operationError(error: String, msg: String) {
-		publishOutgoingRequest(msgID: "0", clientName: UIDevice.current.name, payload: msg, operation: error)
+		publishOutgoingRequest(msgID: "0", sender: UIDevice.current.name, receiver: hostName, payload: msg, operation: error)
 	}
 	//
 
@@ -242,8 +252,8 @@ class ViewController: UIViewController {
 	//
 	// None
 	//
-	func publishOutgoingRequest(msgID: String, clientName: String, payload: String, operation: String) {
-		let newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";operation:" + operation
+	func publishOutgoingRequest(msgID: String, sender: String, receiver: String, payload: String, operation: String) {
+		let newMsg = "ID:" + msgID + ";sender:" + sender + ";receiver:" + receiver + ";payload:" + payload + ";operation:" + operation
 		mqttClient.publish(rpi_torpi, withString: newMsg)
 	}
 	// end: func publishOutgoingRequest
@@ -296,7 +306,7 @@ class ViewController: UIViewController {
 		}
 		
 		// Make sure there is the required number of elements in the hash
-		if (msgHash.count != 4) {
+		if (msgHash.count != 5) {
 			operationError(error: "ERR_hashLength", msg: errMsg)
 			return
 		}
@@ -307,12 +317,23 @@ class ViewController: UIViewController {
 			"RES_plantInfoOnStartup":	RES_plantInfoOnStartup
 		]
 		
+		// Ignore errors about error to prevent bouncing back
+		let dropErr = [
+			"ERR_hashLength"		:	-1,
+			"ERR_missingVals"		:	-2,
+			"ERR_missingKeys"		:	-3,
+			"ERR_invalidOpTag"		:	-4,
+		]
+		
 		// Check if the operation tag is valid
 		if (responseTagHash.keys.contains(msgHash["operation"]!)) {
 			// Print the new message for debug
-			print("New operation \(msgHash["operation"]) with payload \"\(msgHash["payload"])\" from client \(msgHash["client"]) with ID \(msgHash["ID"])")
+			print("New operation \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
 			// If the tag was valid, call its associated function
-			responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["client"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
+			responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["sender"]!), String(msgHash["receiver"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
+		}
+		else if (dropErr.keys.contains(msgHash["operation"]!)) {
+			print("New ERROR \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
 		}
 		else { // If the operation tag wasn't valid, throw an error
 			operationError(error: "ERR_invalidOpTag", msg: errMsg)
@@ -430,7 +451,7 @@ class ViewController: UIViewController {
 		// Subscribe to messages coming from the raspberry pi
 		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		publishOutgoingRequest(msgID: "0", clientName: "\(UIDevice.current.name)", payload: "all", operation: "REQ_plantSensorData")
+		publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(hostName)", payload: "all", operation: "REQ_plantSensorData")
 		
 	}
 	// end: func requestData

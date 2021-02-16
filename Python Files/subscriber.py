@@ -9,7 +9,7 @@ import paho.mqtt.publish as publish # Import mqtt
 serverAddress = "172.20.8.47"
 serverTo = "rpi/torpi"
 serverFrom = "rpi/fromrpi"
-serverName = "Host-RPI3B+"
+serverName = "Host-RPI3B+" # Emily for short
 
 
 # ======================================================================
@@ -20,8 +20,8 @@ serverName = "Host-RPI3B+"
 #
 # Request tag for REQ_plantSensorData
 #
-def REQ_plantSensorData():
-    publishOutgoingResponse("0", serverName, "data requested", "RES_plantSensorData")
+def REQ_plantSensorData(receiver):
+    publishOutgoingResponse("0", serverName, receiver, "data requested", "RES_plantSensorData")
 # end: def REQ_plantSensorData
 
 # ======================================================================
@@ -29,8 +29,8 @@ def REQ_plantSensorData():
 #
 # Request tag for REQ_plantInfoOnStartup
 #
-def REQ_plantInfoOnStartup():
-    publishOutgoingResponse("0", serverName, "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
+def REQ_plantInfoOnStartup(receiver):
+    publishOutgoingResponse("0", serverName, receiver, "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
 # end: def REQ_plantInfoOnStartup
 
 
@@ -73,12 +73,14 @@ def connectionStatus(client, userdata, flags, rc):
 #
 # msg:  the hash that created the error
 #
+# receiver: the client who should receiver the error
+#
 # Returns--
 #
 # None
-def operationError(error, msg):
+def operationError(error, msg, receiver):
     
-    publishOutgoingResponse("0", serverName, msg, error)
+    publishOutgoingResponse("0", serverName, receiver, msg, error)
 
 # end: def operationError
 
@@ -102,8 +104,8 @@ def operationError(error, msg):
 #
 # None
 #
-def publishOutgoingResponse(msgID, clientName, payload, operation):
-    newMsg = "ID:" + msgID + ";client:" + clientName + ";payload:" + payload + ";operation:" + operation
+def publishOutgoingResponse(msgID, sender, receiver, payload, operation):
+    newMsg = "ID:" + msgID + ";sender:" + sender + ";receiver:" + receiver + ";payload:" + payload + ";operation:" + operation
     publish.single(serverFrom, newMsg, hostname = serverAddress)
 # end: def publishMessage
 
@@ -139,10 +141,10 @@ def decodeIncomingRequest(client, userdata, msg):
 
         # Confirm there is one key and one value only
         if (len(keyValue) > 2): 
-            operationError("ERR_missingKeys", errMsg)
+            operationError("ERR_missingKeys", errMsg, msgHash["sender"])
             return
         elif (len(keyValue) < 2): 
-            operationError("ERR_missingVals", errMsg)
+            operationError("ERR_missingVals", errMsg, msgHash["sender"])
             return
 
         key = keyValue[0]
@@ -151,12 +153,12 @@ def decodeIncomingRequest(client, userdata, msg):
         msgHash[key] = value
     
     # Make sure there is the reqired number of elements in the hash
-    if (not (len(msgHash) == 4)): 
-        operationError("ERR_hashLength", errMsg)
+    if (not (len(msgHash) == 5)): 
+        operationError("ERR_hashLength", errMsg, msgHash["sender"])
         return
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
-    if (not msgHash["client"] == serverName):
+    if (not msgHash["sender"] == serverName):
         
         # Hash to handle request tags
         requestTagHash = {
@@ -164,15 +166,26 @@ def decodeIncomingRequest(client, userdata, msg):
             "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup
         }
         
+        # Ignore errors about errors to prevent bouncing back
+        dropErr = {
+            "ERR_hashLength"		:	-1,
+			"ERR_missingVals"		:	-2,
+			"ERR_missingKeys"		:	-3,
+			"ERR_invalidOpTag"		:	-4,
+        }
+        
         # Figure out if the request is valid (is it in the hash above?) and call the associated function
-        try:
-            requestTagHash[msgHash["operation"]]()
-        except KeyError:
+        if (msgHash["operation"] in requestTagHash):
+            requestTagHash[msgHash["operation"]](msgHash["sender"])
+        elif (msgHash["operation"] in dropErr):
+            print("New ERROR " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\". Sender " + msgHash["sender"] + ", Receiver: " + msgHash["receiver"] + ", with ID " + msgHash["ID"])
+            return
+        else:
             # If the tag is invalid, throw an error
-            operationError("ERR_invalidOpTag", errMsg)
+            operationError("ERR_invalidOpTag", errMsg, msgHash["sender"])
             return
         
-    print("New operation " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\" from client " + msgHash["client"] + " with ID " + msgHash["ID"])
+    print("New operation " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\". Sender " + msgHash["sender"] + ", Receiver: " + msgHash["receiver"] + ", with ID " + msgHash["ID"])
 # end: def decodeIncomingRequest
 
 

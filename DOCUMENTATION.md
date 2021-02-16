@@ -33,7 +33,7 @@ Requests and responses (operations) are made up of four elements: a message ID, 
 The expected format for a request or response is:
 
 ```
-"ID:<id here>;client:<client identifier here>;payload:<payload here>;operation:<request or response tag here>"
+"ID:<id here>;sender:<sender of message>;receiver:<intended receiver of message>;payload:<payload here>;operation:<request or response tag here>"
 ```
 
 The keys are case sensitive (id is not the same as ID and will throw an error). There should be no spaces between semicolons or colons (however if a payload has spaces, that is acceptable). Keys and their values should be seperated by colons (:) and different sets of keys/values should be seperated by semicolons (;)
@@ -63,7 +63,7 @@ Response : "RES_plantInfoOnStartup" // Gives some basic infomation about the pla
 If a request of response is invalid for any reason, and error with be thrown. Both the server and iOS side have error handling functions. Errors are sent back to the initial sender with the format:
 
 ```
-"ID:<message id>;client:<client identifier>;payload:<previous message that caused an error>;operation:<error tag>"
+"ID:<message id>;sender:<sender of message>;receiver:<intended receiver of message>;payload:<previous message that caused an error>;operation:<error tag>"
 ```
 
 A list of error tags are their meanings is:

@@ -65,6 +65,10 @@ PRE-RELEASES--
 	pre-3.3.0	2/15/21			Changes in this version:
 									-Fixed issues with the server-side data structure
 									-Changed the way responses are handled within the app
+									
+	pre-3.4.0	2/15/21			Changes in this version:
+									-Changed host name in a comment (for M.U.)
+									-Fixed error checking
 											
 
 FULL-RELEASES--
