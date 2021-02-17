@@ -74,6 +74,10 @@ PRE-RELEASES--
 									-Changed name of python file subscriber.py -> host.py
 									-Documentation changes
 									-Began implementation of add plant button
+									
+	pre-3.5.0	2/17/21			Changes in this version:
+									-Plant information will now be saved
+									-Added userdata folder with user .json files
 											
 
 FULL-RELEASES--

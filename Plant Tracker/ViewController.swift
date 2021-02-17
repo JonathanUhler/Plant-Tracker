@@ -38,23 +38,14 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-// pre-3.2.0	2/15/21			Changes in this version:
-//									-Added error handling on the server and iOS side
-//									-Updated documentation
-//
-// pre-3.3.0	2/15/21			Changes in this version:
-//									-Fixed issues with the server-side data structure
-//									-Changed the way responses are handled within the app
-//									-Documentation changes
-//
-// pre-3.4.0	2/15/21			Changes in this version:
-//									-Changed host name in a comment (for M.U.)
-//									-Fixed error checking
-//
 // pre-3.4.1	2/16/21			Changes in this version:
 //									-Changed name of python file subscriber.py -> host.py
 //									-Documentation changes
 //									-Began implementation of add plant button
+//
+// pre-3.5.0	2/17/21			Changes in this version:
+//									-Plant information will now be saved
+//									-Added userdata folder with user .json files
 
 
 // TO-DO--
@@ -483,11 +474,11 @@ class ViewController: UIViewController {
 		let confirmAction = UIAlertAction(title: "Add", style: .default) { (_) in
 			
 			// Get the text from the input boxes
-			let plantName = alertController.textFields?[0].text
-			let sensorID = alertController.textFields?[1].text
+			let plantName = alertController.textFields![0].text
+			let sensorID = alertController.textFields![1].text
 			
-			print("New plant added with name \(String(describing: plantName)) and sensor ID \(String(describing: sensorID))")
-			self.publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(self.hostName)", payload: "\(String(describing: plantName)),\(String(describing: sensorID))", operation: "REQ_addNewPlant")
+			print("New plant added with name \(plantName!) and sensor ID \(sensorID!)")
+			self.publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(self.hostName)", payload: "\(plantName!),\(sensorID!)", operation: "REQ_addNewPlant")
 			
 		}
 		

@@ -3,6 +3,8 @@
 
 import paho.mqtt.client as mqtt # Import mqtt
 import paho.mqtt.publish as publish # Import mqtt
+from os import path # Import the path function to check if a userdata file exists or not
+import json # Used to read and write userdata
 # import RPi.GPIO as gpio # Import GPIO --> This will not be used in this case
 
 
@@ -39,7 +41,27 @@ def REQ_plantInfoOnStartup(msg):
 # Request tag for REQ_addNewPlant
 #
 def REQ_addNewPlant(msg):
-    print("added plant with data: " + msg["payload"] + ", for user: " + msg["sender"])
+    # Init the path of the new or existing file
+    userpath = "userdata/" + msg["sender"] + ".json"
+    userdata = msg["payload"].split(",")
+    
+    if (path.exists(userpath)): # Make sure the path exsits
+        # First read in any existing data
+        with open(userpath) as infile:
+            data = json.load(infile)
+    else: # If the path doesn't exist create new data
+        data = {}
+        data["plantInfo"] = []
+        
+    # Init the data to save
+    data["plantInfo"].append({
+        userdata[0] :   userdata[1]
+    })    
+    # Save the data (this will create a new file if one does not already exist)
+    with open(userpath, "w") as outfile:
+        json.dump(data, outfile)
+    
+    print("New plant added with data: " + msg["payload"] + ", for user: " + msg["sender"])
 # end: def REQ_addNewPlant
     
 
