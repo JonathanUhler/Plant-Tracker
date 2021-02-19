@@ -108,6 +108,36 @@ def REQ_addNewPlant(msg):
     print("New plant added with data: " + msg["payload"] + ", for user: " + msg["sender"])
 # end: def REQ_addNewPlant
 
+# ======================================================================
+# def REQ_deletePlant
+#
+def REQ_deletePlant(msg):
+    # Make sure the user has plant data already
+    userpath = "userdata/" + msg["sender"] + ".json"
+    
+    # Check for existing file
+    if (path.exists(userpath)):
+        with open(userpath) as infile:
+            plants = json.load(infile)
+    # If the requesting client has no plant data, throw an error
+    else:
+        operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
+        return
+        
+    # Search for and remove the desired plant
+    for i in range(len(plants)):
+        # If the plant was found, delete it
+        if (plants[i]["Name"] == msg["payload"]):
+            del plants[i]
+            # Save the new plant data (any not deleted plants)
+            with open(userpath, "w") as outfile:
+                json.dump(plants, outfile)
+            return
+        # If the plant was not found, throw an error
+        if (i >= len(plants) - 1):
+            operationError("ERR_cannotDeletePlant", "null", msg["sender"])
+# end: def REQ_deletePlant
+
 
 
 # ======================================================================
@@ -242,6 +272,7 @@ def decodeIncomingRequest(client, userdata, msg):
             "REQ_numPlants"         :   REQ_numPlants,
             "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup,
             "REQ_addNewPlant"       :   REQ_addNewPlant,
+            "REQ_deletePlant"       :   REQ_deletePlant,
         }
         
         # Ignore errors about errors to prevent bouncing back
@@ -252,6 +283,7 @@ def decodeIncomingRequest(client, userdata, msg):
 			"ERR_invalidOpTag"		    :	-4,
             "ERR_noPlantDataToRequest"  :   -5,
             "ERR_tooManyPlants"         :   -6,
+            "ERR_cannotDeletePlant"     :   -7,
         }
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function

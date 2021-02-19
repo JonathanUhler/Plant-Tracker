@@ -53,6 +53,10 @@
 //
 // pre-4.0.2	2/18/21			Changes in this version:
 //									-Minor improvements in error handling
+//
+// pre-4.1.0	2/18/21			Changes in this version:
+//									-Plant interaction has been added
+//									-Plants can now be deleted
 
 
 // TO-DO--
@@ -60,8 +64,7 @@
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 // 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
 // 3) Plant interaction
-//	a) Plants should be deletable
-//	b) Clicking on a plant should bring up a menu with more detailed sensor info (plus the delete button)
+//	a) Clicking on a plant should bring up a menu with more detailed sensor info (plus the delete button)
 
 
 // Import libraries
@@ -132,7 +135,7 @@ class ViewController: UIViewController {
 		}
 		
 		// Add in a line
-		displayRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
+		displayRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black, seesTaps: false, plantName: "")
 		
 	}
 	// end: func viewDidLoad
@@ -158,11 +161,19 @@ class ViewController: UIViewController {
 	// Returns--
 	// None
 	//
-	func displayRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
+	func displayRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor, seesTaps: Bool, plantName: String!) {
 		
 		let rect = CGRect(x: x, y: y, width: w, height: h)
 		let view = UIView(frame: rect)
 		view.backgroundColor = color
+		
+		print("\n\n\(plantName)\n\n")
+		
+		if (seesTaps) {
+			let tapGesture = ArgumentTapGestureRecognizer(target: self, action: #selector(handleTap(singleTap:)))
+			tapGesture.x = x; tapGesture.y = y; tapGesture.w = w; tapGesture.h = h; tapGesture.plantName = plantName!
+			view.addGestureRecognizer(tapGesture)
+		}
 
 		self.view.addSubview(view)
 		
@@ -293,13 +304,13 @@ class ViewController: UIViewController {
 			// Make sure the compiler is aware that plantJSON is an array of dictionaries (if this is not here, it would be assumed that plantJSON was an array of type 'Any' during runtime)
 			if let dictionary = plantJSON as? [[String:Any]] {
 				// Init plant info variables
-				let plantName = dictionary[i]["Name"]
+				let plantName = dictionary[i]["Name"]!
 
 				// Display a box
-				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black)
-				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white)
+				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black, seesTaps: false, plantName: "")
+				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white, seesTaps: true, plantName: "\(String(describing: plantName))")
 				// Display the name of the plant
-				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName!)", color: UIColor.black, fontSize: 20)
+				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
 				// Display the moisture bar
 				displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.275) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			}
@@ -307,6 +318,55 @@ class ViewController: UIViewController {
 		
 	}
 	// end: func displayPlantsOnScreen
+	
+	
+	// ==============================================================================================
+	// MARK: func handleTap
+	//
+	// A function that processes the user tapping on a plant's box on the screen
+	//
+	// Arguments--
+	//
+	// singleTap:		the tap recognizer
+	//
+	// Returns--
+	//
+	// None
+	//
+	@objc func handleTap(singleTap: ArgumentTapGestureRecognizer) {
+		// Once the tap stops, execute any code
+		if (singleTap.state == UIGestureRecognizer.State.ended) {
+			
+			// Define the point the user tapped at
+			let pointOfTap = singleTap.location(in: self.view)
+
+			// Define the boundary of a plant box
+			let plantBox = CGRect(x: singleTap.x!, y: singleTap.y!, width: singleTap.w!, height: singleTap.h!)
+
+			// If the tap was within the plant box
+			if (plantBox.contains(pointOfTap)) {
+				
+				// Create a new alert controller and specify the title and message
+				let addPlantAlert = UIAlertController(title: "\(singleTap.plantName!) Details", message: "// This would have info about the sensors", preferredStyle: .alert)
+				
+				// Add in an action for the confirm button and code to run when this button is pressed
+				let settingsAction = UIAlertAction(title: "Settings", style: .default) { (_) in
+					self.plantSettings(plantName: singleTap.plantName!)
+				}
+				// Cancel button does nothing
+				let okayAction = UIAlertAction(title: "Okay", style: .cancel) { (_) in }
+				
+				// Add the buttons
+				addPlantAlert.addAction(settingsAction)
+				addPlantAlert.addAction(okayAction)
+				
+				// Show the alert
+				self.present(addPlantAlert, animated: true, completion: nil)
+				
+			}
+		}
+	}
+	// end: func handleTap
 	
 	
 	// ====================================================================================================
@@ -324,6 +384,10 @@ class ViewController: UIViewController {
 	func RES_numPlants(msg: [String:String]) {
 		let numPlants = Int(msg["payload"]!)!
 		pendingPlantDataRequests = numPlants
+		
+		if (numPlants <= 0) {
+			return
+		}
 		
 		// Get data for the plants
 		for currentPlant in 0...numPlants - 1 {
@@ -401,6 +465,7 @@ class ViewController: UIViewController {
 			"ERR_invalidOpTag"			:	"Internal error - submit an issue",
 			"ERR_noPlantDataToRequest"	:	"You do not have any existing plant data",
 			"ERR_tooManyPlants"			:	"You have reached the maximum number of plants",
+			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant"
 		]
 		
 		// Create a new alert controller and specify the title and message
@@ -511,6 +576,7 @@ class ViewController: UIViewController {
 			"ERR_invalidOpTag"			:	popupError,
 			"ERR_noPlantDataToRequest"	:	popupError,
 			"ERR_tooManyPlants"			:	popupError,
+			"ERR_cannotDeletePlant"		: 	popupError,
 		]
 		
 		if (msgHash["receiver"] == clientName || msgHash["sender"] == clientName) {
@@ -580,13 +646,13 @@ class ViewController: UIViewController {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantName: "")
 			// Tell the user they have connected
 			displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 90, h: 15, msg: "Connected", color: UIColor.green, fontSize: 15)
 			
 			if (hostAddress == "") {
 				// Clear any previous status message
-				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantName: "")
 				// Tell the user there is no host address
 				displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15, msg: "No host address", color: UIColor.red, fontSize: 15)
 				// Turn off the switch
@@ -597,6 +663,7 @@ class ViewController: UIViewController {
 				// Subscribe to messages coming from the raspberry pi
 				self.mqttClient.subscribe(self.rpi_fromrpi)
 				// Request any data about the existing plants
+				self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantName: "")
 				self.plantJSON = []
 				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
 			})
@@ -612,7 +679,7 @@ class ViewController: UIViewController {
 				sender.setOn(false, animated: true)
 	
 				// Clear any previous status message
-				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantName: "")
 				// Tell the user the disconnection status
 				if (error == nil) {
 					// If the client disconnected on their own with the button
@@ -672,44 +739,91 @@ class ViewController: UIViewController {
 	@IBAction func addPlant(_ sender: UIButton) {
 		
 		// Create a new alert controller and specify the title and message
-		let alertController = UIAlertController(title: "New Plant", message: "Enter plant and sensor details", preferredStyle: .alert)
+		let addPlantAlert = UIAlertController(title: "New Plant", message: "Enter plant and sensor details", preferredStyle: .alert)
 		
 		// Add in an action for the confirm button and code to run when this button is pressed
 		let confirmAction = UIAlertAction(title: "Add", style: .default) { (_) in
-			
 			// Get the text from the input boxes
-			let plantName = alertController.textFields![0].text
-			let sensorID = alertController.textFields![1].text
+			let plantName = addPlantAlert.textFields![0].text
+			let sensorID = addPlantAlert.textFields![1].text
 			
-			print("New plant added with name \(plantName!) and sensor ID \(sensorID!)")
 			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName!),\(sensorID!)", operation: "REQ_addNewPlant")
-			
-			self.plantJSON = []
 			// Request any data about the existing plants
+			self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantName: "")
+			self.plantJSON = []
 			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
-			
 		}
-		
 		// Cancel button does nothing
 		let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
 		
 		// Add text fields
-		alertController.addTextField { (textField) in
+		addPlantAlert.addTextField { (textField) in
 			textField.placeholder = "Plant name"
 		}
-		alertController.addTextField { (textField) in
+		addPlantAlert.addTextField { (textField) in
 			textField.placeholder = "Sensor ID/port"
 		}
 		
 		// Add the buttons
-		alertController.addAction(confirmAction)
-		alertController.addAction(cancelAction)
+		addPlantAlert.addAction(confirmAction)
+		addPlantAlert.addAction(cancelAction)
 		
 		// Show the alert
-		self.present(alertController, animated: true, completion: nil)
+		self.present(addPlantAlert, animated: true, completion: nil)
 				
 	}
 	// end: func addPlant
 	
+	
+	// ====================================================================================================
+	// MARK: func plantSettings
+	//
+	// Settings for an already added plant (change name, delete plant, etc.)
+	//
+	// Arguments--
+	//
+	// plantName:	the name of the plant
+	//
+	// Returns--
+	//
+	// None
+	//
+	func plantSettings(plantName: String) {
+		// Create a new alert controller and specify the title and message
+		let addPlantAlert = UIAlertController(title: "\(plantName) Settings", message: "// This would have info about the sensors", preferredStyle: .alert)
+		
+		// Add in an action for the confirm button and code to run when this button is pressed
+		let deleteAction = UIAlertAction(title: "Delete Plant", style: .default) { (_) in
+			// Delete the plant
+			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName)", operation: "REQ_deletePlant")
+			// Request any data about the existing plants
+			self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantName: "")
+			self.plantJSON = []
+			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+		}
+		// Cancel button does nothing
+		let okayAction = UIAlertAction(title: "Save", style: .cancel) { (_) in
+			print("save new plant info")
+		}
+		
+		// Add the buttons
+		addPlantAlert.addAction(deleteAction)
+		addPlantAlert.addAction(okayAction)
+		
+		// Show the alert
+		self.present(addPlantAlert, animated: true, completion: nil)
+	}
+	// end: func plantSettings
+	
 }
 // end: class ViewController
+
+
+
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// MARK: class ArgumentTapGestureRecognizer
+//
+class ArgumentTapGestureRecognizer: UITapGestureRecognizer {
+	var x: CGFloat?, y: CGFloat?, w: CGFloat?, h: CGFloat?, plantName: String?
+}
+// end: class ArgumentTapGestureRecognizer

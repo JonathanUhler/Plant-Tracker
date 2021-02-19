@@ -94,6 +94,10 @@ PRE-RELEASES--
 									
 	pre-4.0.2	2/18/21			Changes in this version:
 									-Minor improvements in error handling
+									
+	pre-4.1.0	2/18/21			Changes in this version:
+									-Plant interaction has been added
+									-Plants can now be deleted
 											
 
 FULL-RELEASES--

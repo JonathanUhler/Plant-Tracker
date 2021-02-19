@@ -61,6 +61,8 @@ Request : "REQ_plantInfoOnStatup" // Asks the server for information about each 
 Response : "RES_plantInfoOnStartup" // Returns information about a particular plant
 
 Request : "REQ_addNewPlant" // Add a new plant with its name and sensor information
+
+Request : "REQ_deletePlant" // Deletes an existing plant
 ```
 
 
@@ -86,6 +88,8 @@ A list of error tags are their meanings is:
 "ERR_noPlantDataToRequest" // A client requested plant data but no such data existed
 
 "ERR_tooManyPlants" // Somehow the user has too many plants and they could not all be displayed
+
+"ERR_cannotDeletePlant" // There was an issue with deleting a plant (most likely it did not exist)
 ```
 
 
@@ -115,6 +119,8 @@ displayText    // Displays a text message
 convertStringToDictionary    // Converts a JSON string into a dictionary
 
 displayPlantsOnScreen    // Displays boxes with plant info
+
+handleTap    // Handles taping on the plants
 ```
 
 "Operation" functions--
@@ -143,6 +149,8 @@ connectionSwitch    // The switch the user uses to connect and disconnect from t
 requestData    // Tied to the "Update Plant Data" button; gets updated sensor data
 
 addPlant    // Tied to the "Add Plant" button; adds a new plant
+
+plantSettings    // Alter information about a plant or delete the plant completely
 ```
 
 
@@ -157,6 +165,8 @@ REQ_numPlants    // Returns the number of plants to the requesting client
 REQ_plantInfoOnStartup    // Returns basic plant info to the requesting cleint
 
 REQ_addNewPlant    // Processes adding a new plant
+
+REQ_deletePlant    // Deletes a plant
 ```
 
 "Server" functions--
