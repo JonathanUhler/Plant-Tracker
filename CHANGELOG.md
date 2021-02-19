@@ -91,6 +91,9 @@ PRE-RELEASES--
 	pre-4.0.1	2/18/21			Changes in this version:
 									-Changed the style of the plant boxes
 									-Added in the red-green-red gradient bars (not yet functional)
+									
+	pre-4.0.2	2/18/21			Changes in this version:
+									-Minor improvements in error handling
 											
 
 FULL-RELEASES--

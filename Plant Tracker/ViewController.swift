@@ -50,6 +50,9 @@
 // pre-4.0.1	2/18/21			Changes in this version:
 //									-Changed the style of the plant boxes
 //									-Added in the red-green-red gradient bars (not yet functional)
+//
+// pre-4.0.2	2/18/21			Changes in this version:
+//									-Minor improvements in error handling
 
 
 // TO-DO--
@@ -377,7 +380,7 @@ class ViewController: UIViewController {
 	
 	
 	// ====================================================================================================
-	// MARK: popupError
+	// MARK: func popupError
 	//
 	// Creates a popup alert when an error occurs
 	//
@@ -390,8 +393,18 @@ class ViewController: UIViewController {
 	// None
 	//
 	func popupError(errorCode: String) {
+		// Create a hash of error code descriptions
+		let errorCodeDescriptors = [
+			"ERR_hashLength"			:	"Internal error - submit an issue",
+			"ERR_missingVals"			:	"Internal error - submit an issue",
+			"ERR_missingKeys"			:	"Internal error - submit an issue",
+			"ERR_invalidOpTag"			:	"Internal error - submit an issue",
+			"ERR_noPlantDataToRequest"	:	"You do not have any existing plant data",
+			"ERR_tooManyPlants"			:	"You have reached the maximum number of plants",
+		]
+		
 		// Create a new alert controller and specify the title and message
-		let errorAlert = UIAlertController(title: "Error", message: "An error has occured: \(errorCode)", preferredStyle: .alert)
+		let errorAlert = UIAlertController(title: "Error", message: "Code: \(errorCode)\n\n\(errorCodeDescriptors[errorCode]!)", preferredStyle: .alert)
 		
 		// Add in an action for the confirm button and code to run when this button is pressed
 		let okayAction = UIAlertAction(title: "Okay", style: .default) { (_) in }

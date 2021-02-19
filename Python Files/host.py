@@ -35,12 +35,13 @@ def REQ_numPlants(msg):
     
     # Check for existing file
     if (path.exists(userpath)):
-        with open(userpath) as infile:
-            plants = json.load(infile)
-    # If the requesting client has no plant data, throw an error
-    else:
-        operationError("ERR_noPlantDataToRequest", "", msg["sender"])
-        return
+        try:
+            with open(userpath) as infile:
+                plants = json.load(infile)
+        except:
+            # If the requesting client has no plant data, throw an error
+            operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
+            return
         
     # Send the client back the number of plants
     publishOutgoingResponse("0", serverName, msg["sender"], str(len(plants)), "RES_numPlants")
@@ -80,8 +81,11 @@ def REQ_addNewPlant(msg):
     # Make sure the path exsits
     if (path.exists(userpath)):
         # First read in any existing data
-        with open(userpath) as infile:
-            plants = json.load(infile)
+        try:
+            with open(userpath) as infile:
+                plants = json.load(infile)
+        except:
+            plants = []
     # If the path doesn't exist create new data
     else:
         plants = []
