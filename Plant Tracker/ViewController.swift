@@ -46,11 +46,19 @@
 //									-The user now has a limited number of plants, and the plant boxes appear properly
 //									-Plant names appear in the boxes
 //									-Updated documentation
+//
+// pre-4.0.1	2/18/21			Changes in this version:
+//									-Changed the style of the plant boxes
+//									-Added in the red-green-red gradient bars (not yet functional)
 
 
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
+// 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
+// 3) Plant interaction
+//	a) Plants should be deletable
+//	b) Clicking on a plant should bring up a menu with more detailed sensor info (plus the delete button)
 
 
 // Import libraries
@@ -219,6 +227,41 @@ class ViewController: UIViewController {
 	// end: func convertStringToDictionary
 	
 	
+	// ==============================================================================================
+	// MARK: func displayMoistureBar
+	//
+	// A function to display the moisture bar with a gradient for each plant
+	//
+	// Arguments--
+	// x:			The x position of the bar
+	//
+	// y:			The y position of the bar
+	//
+	// w:			The width of the bar
+	//
+	// h:			The height of the bar
+	//
+	// font:		The font size of the bar
+	//
+	// Returns--
+	// None
+	//
+	func displayMoistureBar(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
+		// Create the bar
+		let bar = CGRect(x: x, y: y, width: w, height: h)
+		let barView = UIView(frame: bar)
+		barView.backgroundColor = UIColor.clear
+		self.view.addSubview(barView)
+		// Add the gradient
+		let moistureBar = CAGradientLayer()
+		moistureBar.startPoint = CGPoint(x: 0.0, y: 0.5)
+		moistureBar.endPoint = CGPoint(x: 1.0, y: 0.5)
+		moistureBar.frame = barView.bounds
+		moistureBar.colors = [UIColor.red.cgColor, UIColor.orange.cgColor, UIColor.yellow.cgColor, UIColor.green.cgColor, UIColor.yellow.cgColor, UIColor.orange.cgColor, UIColor.red.cgColor]
+		barView.layer.insertSublayer(moistureBar, at: 0)
+	} // end: func displayMoistureBar
+	
+	
 	// ====================================================================================================
 	// MARK: func displayPlantsOnScreen
 	//
@@ -250,9 +293,12 @@ class ViewController: UIViewController {
 				let plantName = dictionary[i]["Name"]
 
 				// Display a box
-				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.gray)
+				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black)
+				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white)
 				// Display the name of the plant
-				displayText(x: screenWidth * 0.07, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName!)", color: UIColor.black, fontSize: 20)
+				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName!)", color: UIColor.black, fontSize: 20)
+				// Display the moisture bar
+				displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.275) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			}
 		}
 		

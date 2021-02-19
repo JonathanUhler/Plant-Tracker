@@ -87,6 +87,10 @@ PRE-RELEASES--
 									-The user now has a limited number of plants, and the plant boxes appear properly
 									-Plant names appear in the boxes
 									-Updated documentation
+									
+	pre-4.0.1	2/18/21			Changes in this version:
+									-Changed the style of the plant boxes
+									-Added in the red-green-red gradient bars (not yet functional)
 											
 
 FULL-RELEASES--
