@@ -57,6 +57,10 @@
 // pre-4.1.0	2/18/21			Changes in this version:
 //									-Plant interaction has been added
 //									-Plants can now be deleted
+//
+// pre-4.1.1	2/18/21			Changes in this version:
+//									-Removed debug statements
+//									-Spelling correction
 
 
 // TO-DO--
@@ -166,8 +170,6 @@ class ViewController: UIViewController {
 		let rect = CGRect(x: x, y: y, width: w, height: h)
 		let view = UIView(frame: rect)
 		view.backgroundColor = color
-		
-		print("\n\n\(plantName)\n\n")
 		
 		if (seesTaps) {
 			let tapGesture = ArgumentTapGestureRecognizer(target: self, action: #selector(handleTap(singleTap:)))
