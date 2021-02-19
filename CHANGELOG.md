@@ -78,6 +78,15 @@ PRE-RELEASES--
 	pre-3.5.0	2/17/21			Changes in this version:
 									-Plant information will now be saved
 									-Added userdata folder with user .json files
+									
+	pre-4.0.0	2/17/21			Changes in this version:
+									-Improved and refined plant info data-structure
+									-Implemented RES_plantInfoOnStartup
+									-Fixed existing issues with plant info not being returned properly
+									-Improved error checking; error alerts will now appear
+									-The user now has a limited number of plants, and the plant boxes appear properly
+									-Plant names appear in the boxes
+									-Updated documentation
 											
 
 FULL-RELEASES--

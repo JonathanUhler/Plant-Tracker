@@ -38,14 +38,14 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-// pre-3.4.1	2/16/21			Changes in this version:
-//									-Changed name of python file subscriber.py -> host.py
-//									-Documentation changes
-//									-Began implementation of add plant button
-//
-// pre-3.5.0	2/17/21			Changes in this version:
-//									-Plant information will now be saved
-//									-Added userdata folder with user .json files
+// pre-4.0.0	2/17/21			Changes in this version:
+//									-Improved and refined plant info data-structure
+//									-Implemented RES_plantInfoOnStartup
+//									-Fixed existing issues with plant info not being returned properly
+//									-Improved error checking; error alerts will now appear
+//									-The user now has a limited number of plants, and the plant boxes appear properly
+//									-Plant names appear in the boxes
+//									-Updated documentation
 
 
 // TO-DO--
@@ -72,8 +72,14 @@ class ViewController: UIViewController {
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
 	// Host IP address
+	let clientName = UIDevice.current.name
 	let hostName = "Host-RPI3B+"
 	var hostAddress = ""
+	
+	// Create the plant data-structure
+	var plantJSON = [] as Array
+	var pendingPlantDataRequests = 0
+	let maxPlants = 7
 	
 	// Instace of CocoaMQTT as mqttClient
 	//
@@ -115,14 +121,14 @@ class ViewController: UIViewController {
 		}
 		
 		// Add in a line
-		displayClearRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
+		displayRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black)
 		
 	}
 	// end: func viewDidLoad
 	
 	
 	// ==============================================================================================
-	// MARK: func displayClearRect
+	// MARK: func displayRect
 	//
 	// A function to display a rectangle that clears the date and information text to display new
 	// text on top of it
@@ -141,7 +147,7 @@ class ViewController: UIViewController {
 	// Returns--
 	// None
 	//
-	func displayClearRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
+	func displayRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
 		
 		let rect = CGRect(x: x, y: y, width: w, height: h)
 		let view = UIView(frame: rect)
@@ -149,7 +155,7 @@ class ViewController: UIViewController {
 
 		self.view.addSubview(view)
 		
-	} // end: func displayClearRect
+	} // end: func displayRect
 	
 	
 	// ==============================================================================================
@@ -172,13 +178,13 @@ class ViewController: UIViewController {
 	//
 	// None
 	//
-	func displayText(x: Int, y: Int, w: Int, h: Int, msg: String, color: UIColor) {
+	func displayText(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, msg: String, color: UIColor, fontSize: CGFloat) {
 				
 		let textRect: CGRect = CGRect(x: x, y: y, width: w, height: h)
 		let textLabel: UILabel = UILabel(frame: textRect)
 		textLabel.text = msg
 		textLabel.textAlignment = .left
-		textLabel.font = UIFont(name: "Gill Sans", size: 15)
+		textLabel.font = UIFont(name: "Gill Sans", size: fontSize)
 		textLabel.textColor = color
 		self.view.addSubview(textLabel)
 		
@@ -186,22 +192,121 @@ class ViewController: UIViewController {
 	
 	
 	// ====================================================================================================
+	// MARK: func convertStringToDictionary
+	//
+	// Converts a string in the format of a dictionary to a dictionary using JSON serialization
+	//
+	// Arguments--
+	//
+	// test:				the string to be convertes
+	//
+	// Returns--
+	//
+	// [String:AnyObject]?:	an operational dictionary (the dictionary being returned, if the string could be
+	//						converted correctly)
+	//
+	func convertStringToDictionary(text: String) -> [String:AnyObject]? {
+		if let data = text.data(using: .utf8) {
+			do {
+				let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:AnyObject]
+				return json
+			} catch {
+				print("Something went wrong")
+			}
+		}
+		return nil
+	}
+	// end: func convertStringToDictionary
+	
+	
+	// ====================================================================================================
+	// MARK: func displayPlantsOnScreen
+	//
+	// Displays boxes with the information for each plant on screen
+	//
+	// Arguemnts--
+	//
+	// None
+	//
+	// Returns--
+	//
+	// None
+	//
+	func displayPlantsOnScreen() {
+		
+		var numPlants = plantJSON.count
+		
+		// Ignore any plants that are after the cap
+		if (numPlants > maxPlants) {
+			publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "", operation: "ERR_tooManyPlants")
+			numPlants = maxPlants // Set the number of plants to be displayed to the maximum
+		}
+		
+		// Display each plant and its information
+		for i in 0...numPlants - 1 {
+			// Make sure the compiler is aware that plantJSON is an array of dictionaries (if this is not here, it would be assumed that plantJSON was an array of type 'Any' during runtime)
+			if let dictionary = plantJSON as? [[String:Any]] {
+				// Init plant info variables
+				let plantName = dictionary[i]["Name"]
+
+				// Display a box
+				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.gray)
+				// Display the name of the plant
+				displayText(x: screenWidth * 0.07, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName!)", color: UIColor.black, fontSize: 20)
+			}
+		}
+		
+	}
+	// end: func displayPlantsOnScreen
+	
+	
+	// ====================================================================================================
 	// MARK: RES_plantSensorData
 	//
-	func RES_plantSensorData(msg: [String]) {
+	func RES_plantSensorData(msg: [String:String]) {
 		// Print the plant data
-		self.displayText(x: Int(self.screenWidth * 0.5), y: Int(self.screenHeight * 0.5), w: 90, h: 20, msg: msg[3], color: UIColor.black)
+		displayText(x: screenWidth * 0.5, y: screenHeight * 0.5, w: 90, h: 20, msg: msg["payload"]!, color: UIColor.black, fontSize: 15)
 	}
 	// end: func RES_plantSensorData
 	
 	// ====================================================================================================
+	// MARK: RES_numPlants
+	//
+	func RES_numPlants(msg: [String:String]) {
+		let numPlants = Int(msg["payload"]!)!
+		pendingPlantDataRequests = numPlants
+		
+		// Get data for the plants
+		for currentPlant in 0...numPlants - 1 {
+			publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "\(currentPlant)", operation: "REQ_plantInfoOnStartup")
+		}
+	}
+	// end: RES_numPlants
+	
+	// ====================================================================================================
 	// MARK: RES_plantInfoOnStartup
 	//
-	func RES_plantInfoOnStartup(msg: [String]) {
-		// Prints info like num of plants, plant names, etc
-		print("RES_plantInfoOnStartup")
+	func RES_plantInfoOnStartup(msg: [String:String]) {
+		
+		pendingPlantDataRequests -= 1
+		
+		// Get the raw data for 1 plant
+		var newPlant = msg["payload"]!
+		// Format the plant data
+		newPlant = newPlant.replacingOccurrences(of: "||", with: ":")
+		newPlant = newPlant.replacingOccurrences(of: "\'", with: "\"")
+		let plantDict = convertStringToDictionary(text: newPlant)
+		
+		// Save the plant in a global array
+		plantJSON.append(plantDict!)
+		
+		// Display all the plants
+		if (pendingPlantDataRequests <= 0) {
+			self.displayPlantsOnScreen()
+		}
+		
 	}
-	// RES_plantInfoOnStartup
+	// end: RES_plantInfoOnStartup
 	
 	
 	// ====================================================================================================
@@ -220,9 +325,38 @@ class ViewController: UIViewController {
 	// None
 	//
 	func operationError(error: String, msg: String) {
-		publishOutgoingRequest(msgID: "0", sender: UIDevice.current.name, receiver: hostName, payload: msg, operation: error)
+		publishOutgoingRequest(msgID: "0", sender: clientName, receiver: hostName, payload: msg, operation: error)
 	}
+	// end: operationError
+	
+	
+	// ====================================================================================================
+	// MARK: popupError
 	//
+	// Creates a popup alert when an error occurs
+	//
+	// Arguments--
+	//
+	// errorCode:		the operation error
+	//
+	// Returns--
+	//
+	// None
+	//
+	func popupError(errorCode: String) {
+		// Create a new alert controller and specify the title and message
+		let errorAlert = UIAlertController(title: "Error", message: "An error has occured: \(errorCode)", preferredStyle: .alert)
+		
+		// Add in an action for the confirm button and code to run when this button is pressed
+		let okayAction = UIAlertAction(title: "Okay", style: .default) { (_) in }
+		
+		// Add the buttons
+		errorAlert.addAction(okayAction)
+		
+		// Show the alert
+		self.present(errorAlert, animated: true, completion: nil)
+	}
+	// end: popupError
 
 	
 	// ====================================================================================================
@@ -277,7 +411,7 @@ class ViewController: UIViewController {
 		var msgHash: [String:String] = [:]
 		
 		// Place the keys and values into the hash from above
-		for (i) in msgElements {
+		for i in msgElements {
 			// Get the keys and values
 			let keyValue = i.split(separator: ":")
 			
@@ -306,28 +440,33 @@ class ViewController: UIViewController {
 		// Create a dictionary of all valid operation tags
 		let responseTagHash = [
 			"RES_plantSensorData"	:	RES_plantSensorData,
-			"RES_plantInfoOnStartup":	RES_plantInfoOnStartup
+			"RES_numPlants"			:	RES_numPlants,
+			"RES_plantInfoOnStartup":	RES_plantInfoOnStartup,
 		]
 		
 		// Ignore errors about error to prevent bouncing back
 		let dropErr = [
-			"ERR_hashLength"		:	-1,
-			"ERR_missingVals"		:	-2,
-			"ERR_missingKeys"		:	-3,
-			"ERR_invalidOpTag"		:	-4,
+			"ERR_hashLength"			:	popupError,
+			"ERR_missingVals"			:	popupError,
+			"ERR_missingKeys"			:	popupError,
+			"ERR_invalidOpTag"			:	popupError,
+			"ERR_noPlantDataToRequest"	:	popupError,
+			"ERR_tooManyPlants"			:	popupError,
 		]
 		
-		if (msgHash["receiver"] == UIDevice.current.name) {
+		if (msgHash["receiver"] == clientName || msgHash["sender"] == clientName) {
 			// Check if the operation tag is valid
 			if (responseTagHash.keys.contains(msgHash["operation"]!)) {
 				// Print the new message for debug
-				print("New operation \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
+				print("New operation \(msgHash["operation"]!) with payload \"\(msgHash["payload"]!)\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(msgHash["ID"]!)")
 				// If the tag was valid, call its associated function
-				responseTagHash[msgHash["operation"]!]!([String(msgHash["ID"]!), String(msgHash["sender"]!), String(msgHash["receiver"]!), String(msgHash["payload"]!), String(msgHash["operation"]!)])
+				responseTagHash[msgHash["operation"]!]!(msgHash)
 			}
 			// Print any errors that were received
 			else if (dropErr.keys.contains(msgHash["operation"]!)) {
-				print("New ERROR \(String(describing: msgHash["operation"])) with payload \"\(String(describing: msgHash["payload"]))\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(String(describing: msgHash["ID"]))")
+				print("New ERROR \(msgHash["operation"]!) with payload \"\(msgHash["payload"]!)\". Sender: \(msgHash["sender"]!), Receiver: \(msgHash["receiver"]!), with ID \(msgHash["ID"]!)")
+				// Call a function to display the error as a popup alert
+				dropErr[msgHash["operation"]!]!(msgHash["operation"]!)
 			}
 			else { // If the operation tag wasn't valid, throw an error
 				operationError(error: "ERR_invalidOpTag", msg: errMsg)
@@ -356,7 +495,7 @@ class ViewController: UIViewController {
 		let newIP = "\(String(describing: sender.text))"
 		hostAddress = newIP.components(separatedBy: "\"")[1] // Get the new IP
 		UserDefaults.standard.setValue(hostAddress, forKey: "hostAddress")
-		mqttClient = CocoaMQTT(clientID: UIDevice.current.name, host: hostAddress, port: 1883) // Try to connect to the new address
+		mqttClient = CocoaMQTT(clientID: clientName, host: hostAddress, port: 1883) // Try to connect to the new address
 	}
 	// end: func getHostIP
 	
@@ -382,18 +521,26 @@ class ViewController: UIViewController {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
 			// Tell the user they have connected
-			self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Connected", color: UIColor.green)
+			displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 90, h: 15, msg: "Connected", color: UIColor.green, fontSize: 15)
 			
 			if (hostAddress == "") {
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
 				// Tell the user there is no host address
-				self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 120, h: 15, msg: "No host address", color: UIColor.red)
+				displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15, msg: "No host address", color: UIColor.red, fontSize: 15)
 				// Turn off the switch
 				sender.setOn(false, animated: true)
 			}
+			
+			DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
+				// Subscribe to messages coming from the raspberry pi
+				self.mqttClient.subscribe(self.rpi_fromrpi)
+				// Request any data about the existing plants
+				self.plantJSON = []
+				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+			})
 			
 			// If the client disconnected
 			mqttClient.didDisconnect = { mqtt, error in
@@ -406,15 +553,15 @@ class ViewController: UIViewController {
 				sender.setOn(false, animated: true)
 	
 				// Clear any previous status message
-				self.displayClearRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
 				// Tell the user the disconnection status
 				if (error == nil) {
 					// If the client disconnected on their own with the button
-					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: 90, h: 15, msg: "Disconnected", color: UIColor.black)
+					self.displayText(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 90, h: 15, msg: "Disconnected", color: UIColor.black, fontSize: 15)
 				}
 				else {
 					// If the client was forcefully disconnected
-					self.displayText(x: Int(self.screenWidth * 0.17), y: Int(self.screenHeight * 0.13), w: Int(self.screenWidth), h: 15, msg: errorMsg, color: UIColor.red)
+					self.displayText(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, msg: errorMsg, color: UIColor.red, fontSize: 15)
 				}
 			}
 			
@@ -443,10 +590,8 @@ class ViewController: UIViewController {
 	//
 	@IBAction func requestData(_ sender: UIButton) {
 		
-		// Subscribe to messages coming from the raspberry pi
-		mqttClient.subscribe(rpi_fromrpi)
 		// Request the plant data
-		publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(hostName)", payload: "all", operation: "REQ_plantSensorData")
+		publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "all", operation: "REQ_plantSensorData")
 		
 	}
 	// end: func requestData
@@ -478,7 +623,11 @@ class ViewController: UIViewController {
 			let sensorID = alertController.textFields![1].text
 			
 			print("New plant added with name \(plantName!) and sensor ID \(sensorID!)")
-			self.publishOutgoingRequest(msgID: "0", sender: "\(UIDevice.current.name)", receiver: "\(self.hostName)", payload: "\(plantName!),\(sensorID!)", operation: "REQ_addNewPlant")
+			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName!),\(sensorID!)", operation: "REQ_addNewPlant")
+			
+			self.plantJSON = []
+			// Request any data about the existing plants
+			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
 			
 		}
 		

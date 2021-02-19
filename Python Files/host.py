@@ -12,58 +12,97 @@ serverAddress = "172.20.8.47"
 serverTo = "rpi/torpi"
 serverFrom = "rpi/fromrpi"
 serverName = "Host-RPI3B+" # Emily for short
+maxPlants = 7 # Maximum number of plants the user can have
 
 
 # ======================================================================
 # Request Tag Functions---
 
+
 # ======================================================================
 # def REQ_plantSensorData
-#
-# Request tag for REQ_plantSensorData
 #
 def REQ_plantSensorData(msg):
     publishOutgoingResponse("0", serverName, msg["sender"], "data requested", "RES_plantSensorData")
 # end: def REQ_plantSensorData
 
 # ======================================================================
+# def REQ_numPlants
+#
+def REQ_numPlants(msg):
+    # Make sure the user has plant data already
+    userpath = "userdata/" + msg["sender"] + ".json"
+    
+    # Check for existing file
+    if (path.exists(userpath)):
+        with open(userpath) as infile:
+            plants = json.load(infile)
+    # If the requesting client has no plant data, throw an error
+    else:
+        operationError("ERR_noPlantDataToRequest", "", msg["sender"])
+        return
+        
+    # Send the client back the number of plants
+    publishOutgoingResponse("0", serverName, msg["sender"], str(len(plants)), "RES_numPlants")
+
+# ======================================================================
 # def REQ_plantInfoOnStartup
 #
-# Request tag for REQ_plantInfoOnStartup
-#
 def REQ_plantInfoOnStartup(msg):
-    publishOutgoingResponse("0", serverName, msg["sender"], "this would contain # of plants, plant names, etc", "RES_plantInfoOnStartup")
+    # Make sure the user has plant data already
+    userpath = "userdata/" + msg["sender"] + ".json"
+    
+    # Check for existing file
+    if (path.exists(userpath)):
+        with open(userpath) as infile:
+            plants = json.load(infile)
+    # If the requesting client has no plant data, throw an error
+    else:
+        operationError("ERR_noPlantDataToRequest", "", msg["sender"])
+        return
+        
+    # Get the specific plant to return
+    plantDataToSend = plants[int(msg["payload"]) - 1]
+    plantDataAsStr = json.dumps(plantDataToSend)
+    plantDataAsStr = plantDataAsStr.replace(":", "||")
+    # Return the data for a single plant
+    publishOutgoingResponse("0", serverName, msg["sender"], plantDataAsStr, "RES_plantInfoOnStartup")
 # end: def REQ_plantInfoOnStartup
 
 # ======================================================================
 # def REQ_addNewPlant
-#
-# Request tag for REQ_addNewPlant
 #
 def REQ_addNewPlant(msg):
     # Init the path of the new or existing file
     userpath = "userdata/" + msg["sender"] + ".json"
     userdata = msg["payload"].split(",")
     
-    if (path.exists(userpath)): # Make sure the path exsits
+    # Make sure the path exsits
+    if (path.exists(userpath)):
         # First read in any existing data
         with open(userpath) as infile:
-            data = json.load(infile)
-    else: # If the path doesn't exist create new data
-        data = {}
-        data["plantInfo"] = []
+            plants = json.load(infile)
+    # If the path doesn't exist create new data
+    else:
+        plants = []
+        
+    if (len(plants) >= maxPlants):
+        operationError("ERR_tooManyPlants", "null", msg["sender"])
+        return
         
     # Init the data to save
-    data["plantInfo"].append({
-        userdata[0] :   userdata[1]
-    })    
+    plants.append({
+        "Name"      :   userdata[0],
+        "Sensors"   :   userdata[1]
+    })
+    
     # Save the data (this will create a new file if one does not already exist)
     with open(userpath, "w") as outfile:
-        json.dump(data, outfile)
+        json.dump(plants, outfile)
     
+    # Print out what was saved
     print("New plant added with data: " + msg["payload"] + ", for user: " + msg["sender"])
 # end: def REQ_addNewPlant
-    
 
 
 
@@ -141,6 +180,7 @@ def publishOutgoingResponse(msgID, sender, receiver, payload, operation):
     publish.single(serverFrom, newMsg, hostname = serverAddress)
 # end: def publishMessage
 
+
 # ======================================================================
 # def decodeIncomingRequest
 #
@@ -195,16 +235,19 @@ def decodeIncomingRequest(client, userdata, msg):
         # Hash to handle request tags
         requestTagHash = {
             "REQ_plantSensorData"   :   REQ_plantSensorData,
+            "REQ_numPlants"         :   REQ_numPlants,
             "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup,
-            "REQ_addNewPlant"       :   REQ_addNewPlant
+            "REQ_addNewPlant"       :   REQ_addNewPlant,
         }
         
         # Ignore errors about errors to prevent bouncing back
         dropErr = {
-            "ERR_hashLength"		:	-1,
-			"ERR_missingVals"		:	-2,
-			"ERR_missingKeys"		:	-3,
-			"ERR_invalidOpTag"		:	-4,
+            "ERR_hashLength"		    :	-1,
+			"ERR_missingVals"		    :	-2,
+			"ERR_missingKeys"		    :	-3,
+			"ERR_invalidOpTag"		    :	-4,
+            "ERR_noPlantDataToRequest"  :   -5,
+            "ERR_tooManyPlants"         :   -6,
         }
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function

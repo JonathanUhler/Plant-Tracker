@@ -52,11 +52,15 @@ Request : "REQ_plantSensorData" // A request that asks the server for sensor inf
 
 Response : "RES_plantSensorData" // A response that is attached to a message with plant data. This response follows the request "REQ_plantData." The payload includes the data for all plants or a single specified plant
 
-Request	: "REQ_plantInfoOnStartup" // Requests information such as the number of plants, plant names, etc. when the iOS app first connects
+Request	: "REQ_numPlants" // Asks for the number of plants the user has
 
-Response : "RES_plantInfoOnStartup" // Gives some basic infomation about the plants (no sensor information) to the iOS client
+Response : "RES_numPlants" // Returns the number of plants the user has
 
-Request : "REQ_addNewPlant" // Add a new plant with its name and sensor ID information
+Request : "REQ_plantInfoOnStatup" // Asks the server for information about each plant, such as name, sensor IDs, etc
+
+Response : "RES_plantInfoOnStartup" // Returns information about a particular plant
+
+Request : "REQ_addNewPlant" // Add a new plant with its name and sensor information
 ```
 
 
@@ -78,4 +82,90 @@ A list of error tags are their meanings is:
 "ERR_missingKeys" // There were more values than keys in the hash
 
 "ERR_invalidOpTag" // There was an invalid operation tag
+
+"ERR_noPlantDataToRequest" // A client requested plant data but no such data existed
+
+"ERR_tooManyPlants" // Somehow the user has too many plants and they could not all be displayed
+```
+
+
+# Adding Plants
+
+When adding plants, reading, or writing an user's json file, there is an expected format to be followed:
+
+```
+"[{"Sensors": "test id", "Name": "test name"}, {"Sensors": "id", "Name": "plant"}]"
+```
+
+As the line above shows, each plant for any given user is a dictionary (or hash) and all of the plants for any given user are inside an array. The datastructer goes: an array of plants, each a hash with keys and values about information about that plant (such as name, sensor amount, sensor ids, etc)
+
+
+# Functions
+
+A list of functions for the iOS app and their purpose can be found below:
+
+"Utility" functions--
+```
+viewDidLoad	   // build-in iOS function, completes some initially setup on launch
+
+displayRect    // Displays a rectangle of a specified color, position, and size
+
+displayText    // Displays a text message
+
+convertStringToDictionary    // Converts a JSON string into a dictionary
+
+displayPlantsOnScreen    // Displays boxes with plant info
+```
+
+"Operation" functions--
+```
+RES_plantSensorData    // Processes the plant sensor data
+
+RES_numPlants    // Processes the number of plants
+
+RES_plantInfoOnStartup    // Gets basic plant information when the app starts
+```
+
+"Storyboard" and "Server" functions--
+```
+operationError    // Throws an error
+
+popupError    // Show a popup alert with an error message
+
+publishOutgoingRequest    // Publishes a new request message
+
+decodeIncomingResponse    // Processes an incoming response message
+
+getHostIP    // A textbox which the user can enter a new host IP into
+
+connectionSwitch    // The switch the user uses to connect and disconnect from the server
+
+requestData    // Tied to the "Update Plant Data" button; gets updated sensor data
+
+addPlant    // Tied to the "Add Plant" button; adds a new plant
+```
+
+
+A list of functions for the python script can be found below:
+
+"Operation" functions--
+```
+REQ_plantSensorData    // Returns plant sensor data to the requesting client
+
+REQ_numPlants    // Returns the number of plants to the requesting client
+
+REQ_plantInfoOnStartup    // Returns basic plant info to the requesting cleint
+
+REQ_addNewPlant    // Processes adding a new plant
+```
+
+"Server" functions--
+```
+connectionStatus    // Connects and subscribes the python script to the actual server
+
+operationError    // Throws an error
+
+publishOutgoingResponse    // Publishes a new response message
+
+decodeIncomingRequest    // Processes an incoming request message
 ```
