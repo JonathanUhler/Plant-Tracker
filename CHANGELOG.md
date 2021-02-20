@@ -102,6 +102,11 @@ PRE-RELEASES--
 	pre-4.1.1	2/18/21			Changes in this version:
 									-Removed debug statements
 									-Spelling correction
+									
+	pre-4.2.0	2/20/21			Changes in this version:
+									-Clicking on a plant will now display sensor information
+									-Began introducing the ability to edit plant name
+									-Documentation changes
 											
 
 FULL-RELEASES--

@@ -38,13 +38,13 @@ def REQ_numPlants(msg):
         try:
             with open(userpath) as infile:
                 plants = json.load(infile)
+            # Send the client back the number of plants
+            publishOutgoingResponse("0", serverName, msg["sender"], str(len(plants)), "RES_numPlants")
         except:
             # If the requesting client has no plant data, throw an error
             operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
             return
-        
-    # Send the client back the number of plants
-    publishOutgoingResponse("0", serverName, msg["sender"], str(len(plants)), "RES_numPlants")
+# end: def REQ_numPlants
 
 # ======================================================================
 # def REQ_plantInfoOnStartup
@@ -76,7 +76,7 @@ def REQ_plantInfoOnStartup(msg):
 def REQ_addNewPlant(msg):
     # Init the path of the new or existing file
     userpath = "userdata/" + msg["sender"] + ".json"
-    userdata = msg["payload"].split(",")
+    userdata = msg["payload"].split("||")
     
     # Make sure the path exsits
     if (path.exists(userpath)):
