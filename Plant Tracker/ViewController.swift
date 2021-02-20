@@ -46,6 +46,9 @@
 //									-Clicking on a plant will now display sensor information
 //									-Began introducing the ability to edit plant name
 //									-Documentation changes
+//
+// pre-4.2.1	2/20/21			Changes in this version:
+//									-Code cleanup; added refreshPlantsDisplayed function
 
 
 // TO-DO--
@@ -262,6 +265,29 @@ class ViewController: UIViewController {
 		moistureBar.colors = [UIColor.red.cgColor, UIColor.orange.cgColor, UIColor.yellow.cgColor, UIColor.green.cgColor, UIColor.yellow.cgColor, UIColor.orange.cgColor, UIColor.red.cgColor]
 		barView.layer.insertSublayer(moistureBar, at: 0)
 	} // end: func displayMoistureBar
+	
+	
+	// ====================================================================================================
+	// MARK: func refreshPlantsDisplayed
+	//
+	// Refreshes any plants displayed on the screen when a plant is added, deleted, or edited
+	//
+	// Arguments--
+	//
+	// None
+	//
+	// Returns--
+	//
+	// None
+	//
+	func refreshPlantsDisplayed() {
+		// Remove any current plants being displayed
+		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+		// Refresh the plant data
+		self.plantJSON = []
+		self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+	}
+	// end: func refreshPlantsDisplayed
 	
 	
 	// ====================================================================================================
@@ -663,10 +689,8 @@ class ViewController: UIViewController {
 			DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500), execute: {
 				// Subscribe to messages coming from the raspberry pi
 				self.mqttClient.subscribe(self.rpi_fromrpi)
-				// Request any data about the existing plants
-				self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
-				self.plantJSON = []
-				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+				// Refresh plant data
+				self.refreshPlantsDisplayed()
 			})
 			
 			// If the client disconnected
@@ -762,10 +786,8 @@ class ViewController: UIViewController {
 				
 				// Save the new plant
 				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName!)||\(sensors)", operation: "REQ_addNewPlant")
-				// Request any data about the existing plants
-				self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
-				self.plantJSON = []
-				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+				// Refresh plant data
+				self.refreshPlantsDisplayed()
 			}
 			// Cancel button does nothing
 			let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
@@ -832,14 +854,12 @@ class ViewController: UIViewController {
 		let deleteAction = UIAlertAction(title: "Delete Plant", style: .default) { (_) in
 			// Delete the plant
 			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantInfo["Name"]!)", operation: "REQ_deletePlant")
-			// Request any data about the existing plants
-			self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
-			self.plantJSON = []
-			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
+			// Refresh plant data
+			self.refreshPlantsDisplayed()
 		}
 		// Save button saves any new plants data
 		let saveAction = UIAlertAction(title: "Save", style: .cancel) { (_) in
-			// Tell the server new plant information was added
+			//MARK: // Note: Tell the server new plant information was added
 		}
 		
 		// Add in the textboxes for sensor details and name change
@@ -860,11 +880,11 @@ class ViewController: UIViewController {
 // end: class ViewController
 
 
-
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // MARK: class ArgumentTapGestureRecognizer
 //
 class ArgumentTapGestureRecognizer: UITapGestureRecognizer {
+	// Allows the objc function called by a UITapGuestureRecognizer to have arguments passed to it
 	var x: CGFloat?, y: CGFloat?, w: CGFloat?, h: CGFloat?, plantInfo: [String:Any]?
 }
 // end: class ArgumentTapGestureRecognizer

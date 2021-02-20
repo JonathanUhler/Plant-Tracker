@@ -107,6 +107,9 @@ PRE-RELEASES--
 									-Clicking on a plant will now display sensor information
 									-Began introducing the ability to edit plant name
 									-Documentation changes
+									
+	pre-4.2.1	2/20/21			Changes in this version:
+									-Code cleanup; added refreshPlantsDisplayed function
 											
 
 FULL-RELEASES--
