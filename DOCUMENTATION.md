@@ -90,6 +90,8 @@ A list of error tags are their meanings is:
 "ERR_tooManyPlants" // Somehow the user has too many plants and they could not all be displayed
 
 "ERR_cannotDeletePlant" // There was an issue with deleting a plant (most likely it did not exist)
+
+"ERR_invalidPlantSensorID" // The sensor identifier the user entered was not found or is invalid
 ```
 
 
@@ -117,6 +119,10 @@ displayRect    // Displays a rectangle of a specified color, position, and size
 displayText    // Displays a text message
 
 convertStringToDictionary    // Converts a JSON string into a dictionary
+
+displayMoistureBar    // Displays a colored bar to give the user an idea of the plant's water at a glance
+
+refreshPlantsDisplayed    // Refreshes the plants
 
 displayPlantsOnScreen    // Displays boxes with plant info
 
@@ -154,7 +160,7 @@ plantSettings    // Alter information about a plant or delete the plant complete
 ```
 
 
-A list of functions for the python script can be found below:
+A list of functions for the host.py script can be found below:
 
 "Operation" functions--
 ```
@@ -178,4 +184,12 @@ operationError    // Throws an error
 publishOutgoingResponse    // Publishes a new response message
 
 decodeIncomingRequest    // Processes an incoming request message
+```
+
+
+A list of functions for the sensors.py script can be found below
+
+"Operation" functions--
+```
+readSensor    // Reads the data from a given sensor
 ```

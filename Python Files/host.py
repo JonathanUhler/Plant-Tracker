@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt # Import mqtt
 import paho.mqtt.publish as publish # Import mqtt
 from os import path # Import the path function to check if a userdata file exists or not
 import json # Used to read and write userdata
+import sensors # Import the sensors.py file
 # import RPi.GPIO as gpio # Import GPIO --> This will not be used in this case
 
 
@@ -23,7 +24,50 @@ maxPlants = 7 # Maximum number of plants the user can have
 # def REQ_plantSensorData
 #
 def REQ_plantSensorData(msg):
-    publishOutgoingResponse("0", serverName, msg["sender"], "data requested", "RES_plantSensorData")
+    
+    userpath = "userdata/" + msg["sender"] + ".json"
+    # Check for existing file
+    if (path.exists(userpath)):
+        try:
+            with open(userpath) as infile:
+                plants = json.load(infile)
+        # An error occured while reading plant information from the users's .json file
+        except:
+            # If the requesting client has no plant data, throw an error
+            operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
+            return
+                
+        # Get the data from the sensors
+        if (msg["payload"] == "all"): # the user requested all plant data
+            
+            # For every sensor of every plant, return the data for each plant at a time
+            for plant in plants:
+                # Data for any given plant
+                dataForPlant = []
+                
+                # Parse the json sensor names as a literal array
+                sensorsParsed = json.loads(plant["Sensors"])
+                
+                for sensor in range(len(sensorsParsed)):
+                    try:
+                        sensorData = sensors.readSensor(int(sensorsParsed[sensor], 16))
+                    except:
+                        operationError("ERR_invalidPlantSensorID", "null", msg["sender"])
+                        return
+                    
+                    # If the sensor ID is invalid, throw an error
+                    if (sensorData == "ERR_invalidPlantSensorID"):
+                        operationError("ERR_invalidPlantSensorID", "null", msg["sender"])
+                        return
+                        
+                    # If the data was valid, save it
+                    sensorData["plant"] = plant["Name"]
+                    sensorData["sensor"] = sensorsParsed[sensor]
+                    sensorData = str(sensorData).replace(":", "-")
+                    dataForPlant = sensorData
+                    
+                    # Otherwise, return the data
+                    publishOutgoingResponse("0", serverName, msg["sender"], str(dataForPlant), "RES_plantSensorData")
 # end: def REQ_plantSensorData
 
 # ======================================================================
@@ -284,6 +328,7 @@ def decodeIncomingRequest(client, userdata, msg):
             "ERR_noPlantDataToRequest"  :   -5,
             "ERR_tooManyPlants"         :   -6,
             "ERR_cannotDeletePlant"     :   -7,
+            "ERR_invalidPlantSensorID"  :   -8,
         }
         
         # Figure out if the request is valid (is it in the hash above?) and call the associated function

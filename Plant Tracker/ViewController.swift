@@ -38,25 +38,19 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-// pre-4.1.1	2/18/21			Changes in this version:
-//									-Removed debug statements
-//									-Spelling correction
-//
-// pre-4.2.0	2/20/21			Changes in this version:
-//									-Clicking on a plant will now display sensor information
-//									-Began introducing the ability to edit plant name
-//									-Documentation changes
-//
-// pre-4.2.1	2/20/21			Changes in this version:
-//									-Code cleanup; added refreshPlantsDisplayed function
+// pre-5.0.0	2/28/21			Changes in this version:
+//									-Major data structure changes
+//									-sensors.py added to read sensor data
+//									-Sensor functionality added
+//									-Sensor data will display when clicking on a plant
 
 
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 // 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
-// 3) Plant interaction
-//	a) Clicking on a plant should bring up a menu with more detailed sensor info (plus the delete button)
+// 3) Make sensor data display on the moisture bars for each plant
+// 4) Allow plants to be edited and the new data to be saved
 
 
 // Import libraries
@@ -82,10 +76,12 @@ class ViewController: UIViewController {
 	let hostName = "Host-RPI3B+"
 	var hostAddress = ""
 	
-	// Create the plant data-structure
+	// Create the plant and sensor data-structure
 	var plantJSON = [] as Array
+	var sensorJSON = [] as Array<Dictionary<String, Any>>
 	var pendingPlantDataRequests = 0
 	let maxPlants = 7
+	
 	
 	// Instace of CocoaMQTT as mqttClient
 	//
@@ -210,7 +206,7 @@ class ViewController: UIViewController {
 	//
 	// Arguments--
 	//
-	// test:				the string to be convertes
+	// test:				the string to be converted
 	//
 	// Returns--
 	//
@@ -353,22 +349,32 @@ class ViewController: UIViewController {
 			
 			// Define the point the user tapped at
 			let pointOfTap = singleTap.location(in: self.view)
-
 			// Define the boundary of a plant box
 			let plantBox = CGRect(x: singleTap.x!, y: singleTap.y!, width: singleTap.w!, height: singleTap.h!)
 
 			// If the tap was within the plant box
 			if (plantBox.contains(pointOfTap)) {
-				// Setup the sensor data
-				let sensors = singleTap.plantInfo!["Sensors"] as! String
-				var sensorArray = sensors.replacingOccurrences(of: "[\"", with: ""); sensorArray = sensorArray.replacingOccurrences(of: "\"]", with: ""); let displaySensors = sensorArray.components(separatedBy: "\", \"")
+				
 				// Create the message that is displayed (this is what actually contains the sensor readings)
 				var sensorDetailMsg = ""
-				// Add in information about the sensors as a message
-				for i in 0...displaySensors.count - 1 {
-					// MARK: // NOTE: around here is where the sensor data will actually be requested and then displayed
-					let msgAddition = "\n\(displaySensors[i]): // sensor value" // After this colon would be the sensor values
-					sensorDetailMsg.append(msgAddition) // Add each sensor and its value to the total message
+				
+				// Make sure the user has updated the sensors
+				if (sensorJSON.count > 0) {
+					
+					// Add in information about the sensors as a message
+					for i in 0...sensorJSON.count - 1 { // For every sensor of a single given plant
+							
+						// Add a message (the sensor name/ID and its value) to the alert for each sensor
+						if (singleTap.plantInfo!["Name"] as! String == sensorJSON[i]["plant"] as! String) {
+							// Add sensor data to the messsage
+							let msgAddition = "\n\(String(describing: sensorJSON[i]["sensor"]!)) - Moisture: \(sensorJSON[i]["moisture"] ?? "no value"), Temp: \(sensorJSON[i]["temperature"] ?? "no value")°F"
+							sensorDetailMsg.append(msgAddition) // Add each sensor and its value to the total message
+						}
+					
+					}
+				}
+				else {
+					sensorDetailMsg.append("\nNo data. Try pressing \'Update Plant Data\' first")
 				}
 				
 				// Add in the title and message
@@ -387,6 +393,7 @@ class ViewController: UIViewController {
 				
 				// Show the alert
 				self.present(addPlantAlert, animated: true, completion: nil)
+				
 			}
 		}
 	}
@@ -397,8 +404,12 @@ class ViewController: UIViewController {
 	// MARK: RES_plantSensorData
 	//
 	func RES_plantSensorData(msg: [String:String]) {
-		// Print the plant data
-		displayText(x: screenWidth * 0.5, y: screenHeight * 0.5, w: 90, h: 20, msg: msg["payload"]!, color: UIColor.black, fontSize: 15)
+		// Store the sensor data in a variable
+		var sensorDataAsStr = msg["payload"]
+		// Format the string so that the convertStringToDictionary function can convert it into a dictionary
+		sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "-", with: ":"); sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "\'", with: "\"")
+		// Turn the data from a string into an array
+		sensorJSON.append(convertStringToDictionary(text: sensorDataAsStr!)!)
 	}
 	// end: func RES_plantSensorData
 	
@@ -430,8 +441,8 @@ class ViewController: UIViewController {
 		// Get the raw data for 1 plant
 		var newPlant = msg["payload"]!
 		// Format the plant data
-		newPlant = newPlant.replacingOccurrences(of: "||", with: ":")
-		newPlant = newPlant.replacingOccurrences(of: "\'", with: "\"")
+		newPlant = newPlant.replacingOccurrences(of: "||", with: ":"); newPlant = newPlant.replacingOccurrences(of: "\'", with: "\"")
+		// Convert the plant strings to dictionaries
 		let plantDict = convertStringToDictionary(text: newPlant)
 		
 		// Save the plant in a global array
@@ -491,6 +502,7 @@ class ViewController: UIViewController {
 			"ERR_tooManyPlants"			:	"You have reached the maximum number of plants",
 			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant",
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
+			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
 		]
 		
 		// Create a new alert controller and specify the title and message
@@ -603,6 +615,7 @@ class ViewController: UIViewController {
 			"ERR_tooManyPlants"			:	popupError,
 			"ERR_cannotDeletePlant"		: 	popupError,
 			"ERR_addPlantSensorNumIssue":	popupError,
+			"ERR_invalidPlantSensorID"	:	popupError,
 		]
 		
 		// Process the message: run a function, throw an error, etc
