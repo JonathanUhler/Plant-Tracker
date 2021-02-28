@@ -110,6 +110,15 @@ PRE-RELEASES--
 									
 	pre-4.2.1	2/20/21			Changes in this version:
 									-Code cleanup; added refreshPlantsDisplayed function
+									
+	pre-5.0.0	2/28/21			Changes in this version:
+									-Major data structure changes
+									-sensors.py added to read sensor data
+									-Sensor functionality added
+									-Sensor data will display when clicking on a plant
+
+	pre-5.0.1	2/28/21			Changes in this version:
+									-Fixed a bug with sensor data being duplicated
 											
 
 FULL-RELEASES--

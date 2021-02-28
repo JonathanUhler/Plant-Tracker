@@ -43,6 +43,9 @@
 //									-sensors.py added to read sensor data
 //									-Sensor functionality added
 //									-Sensor data will display when clicking on a plant
+//
+// pre-5.0.1	2/28/21			Changes in this version:
+//									-Fixed a bug with sensor data being duplicated
 
 
 // TO-DO--
@@ -755,6 +758,7 @@ class ViewController: UIViewController {
 	@IBAction func requestData(_ sender: UIButton) {
 		
 		// Request the plant data
+		sensorJSON = []
 		publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "all", operation: "REQ_plantSensorData")
 		
 	}
