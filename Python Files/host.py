@@ -134,9 +134,15 @@ def REQ_addNewPlant(msg):
     else:
         plants = []
         
+    # The user already has the maximum number of plants
     if (len(plants) >= maxPlants):
         operationError("ERR_tooManyPlants", "null", msg["sender"])
         return
+    # The user already has a plant with this name
+    for i in range(len(plants)):
+        if (userdata[0] == plants[i]["Name"]):
+            operationError("ERR_plantNameTaken", "null", msg["sender"])
+            return
         
     # Init the data to save
     plants.append({

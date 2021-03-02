@@ -92,6 +92,8 @@ A list of error tags are their meanings is:
 "ERR_cannotDeletePlant" // There was an issue with deleting a plant (most likely it did not exist)
 
 "ERR_invalidPlantSensorID" // The sensor identifier the user entered was not found or is invalid
+
+"ERR_plantNameTaken" // The user is trying to add a plant whose name is already taken
 ```
 
 

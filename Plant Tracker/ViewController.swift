@@ -46,14 +46,19 @@
 //
 // pre-5.0.1	2/28/21			Changes in this version:
 //									-Fixed a bug with sensor data being duplicated
+//
+// pre-5.1.0	3/1/21			Changes in this version:
+//									-Fixed a bug with multiple plants of the same name; user's can no longer have multiple plants with the same name
+//									-Average moisture between all a plant's sensors now displays above the moisture bar
 
 
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 // 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
-// 3) Make sensor data display on the moisture bars for each plant
-// 4) Allow plants to be edited and the new data to be saved
+// 3) Make the sensor value that displays on the moisture bar on a 1-10 scale
+// 4) Display an indicator on the moisture bars to show where the plant's health is
+// 5) Allow plants to be edited and the new data to be saved
 
 
 // Import libraries
@@ -223,12 +228,26 @@ class ViewController: UIViewController {
 				return json
 			}
 			catch {
-				print("func convertStringToDictionary: unable to convert string (check string formatting)")
+				print("ERR func convertStringToDictionary: unable to convert string (check string formatting)")
 			}
 		}
 		return nil
 	}
 	// end: func convertStringToDictionary
+	
+	
+	func convertStringToArray(text: String) -> [String]? {
+		if let data = text.data(using: .utf8) {
+			do {
+				let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String]
+				return json
+			}
+			catch {
+				print("ERR func convertStringToArray: unable to convert string (check string formatting)")
+			}
+		}
+		return nil
+	}
 	
 	
 	// ==============================================================================================
@@ -413,6 +432,42 @@ class ViewController: UIViewController {
 		sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "-", with: ":"); sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "\'", with: "\"")
 		// Turn the data from a string into an array
 		sensorJSON.append(convertStringToDictionary(text: sensorDataAsStr!)!)
+		
+		// Display the points on the moisutre bars that show where the plant's overall moisture is
+		var numPlants = plantJSON.count
+		
+		// Ignore any plants that are after the cap
+		if (numPlants > maxPlants) {
+			publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "", operation: "ERR_tooManyPlants")
+			numPlants = maxPlants // Set the number of plants to be displayed to the maximum
+		}
+		
+		// Display each plant and its information
+		for i in 0...numPlants - 1 {
+			// Get the name of expected plant
+			let plantInfo = plantJSON as? [[String:Any]]
+			
+			// Get the sensor data for the right plant
+			var sensorToDisplay: Int = 0
+			let sensorArray = convertStringToArray(text: plantInfo![i]["Sensors"] as! String); let numSensors = sensorArray!.count // Get the number of sensors for the current plant
+			
+			// Go through each sensor to find out if it should be displayed or not
+			for j in 0...sensorJSON.count - 1 {
+				// If the name of the plant the user is looking at matches the name of a sensor, store that sensor value to display
+				if (plantInfo![i]["Name"] as! String == sensorJSON[j]["plant"] as! String) {
+					sensorToDisplay += sensorJSON[j]["moisture"] as! Int
+				}
+			}
+			
+			// Get the average value across all sensors for a given plant
+			sensorToDisplay = sensorToDisplay / numSensors
+			
+			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
+			// Prevent data values from stacking
+			displayRect(x: screenWidth * CGFloat((0.67 - (numWidth / 110))), y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * CGFloat(numWidth / 30), h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+			// Display the sensor data
+			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.225) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
+		}
 	}
 	// end: func RES_plantSensorData
 	
@@ -506,6 +561,7 @@ class ViewController: UIViewController {
 			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant",
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
 			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
+			"ERR_plantNameTaken"		:	"The name of the plant you are trying to add is already taken",
 		]
 		
 		// Create a new alert controller and specify the title and message
@@ -619,6 +675,7 @@ class ViewController: UIViewController {
 			"ERR_cannotDeletePlant"		: 	popupError,
 			"ERR_addPlantSensorNumIssue":	popupError,
 			"ERR_invalidPlantSensorID"	:	popupError,
+			"ERR_plantNameTaken"		:	popupError,
 		]
 		
 		// Process the message: run a function, throw an error, etc

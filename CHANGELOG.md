@@ -119,6 +119,10 @@ PRE-RELEASES--
 
 	pre-5.0.1	2/28/21			Changes in this version:
 									-Fixed a bug with sensor data being duplicated
+									
+	pre-5.1.0	3/1/21			Changes in this version:
+									-Fixed a bug with multiple plants of the same name; user's can no longer have multiple plants with the same name
+									-Average moisture between all a plant's sensors now displays above the moisture bar
 											
 
 FULL-RELEASES--
