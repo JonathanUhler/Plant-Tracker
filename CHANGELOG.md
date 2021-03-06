@@ -123,6 +123,10 @@ PRE-RELEASES--
 	pre-5.1.0	3/1/21			Changes in this version:
 									-Fixed a bug with multiple plants of the same name; user's can no longer have multiple plants with the same name
 									-Average moisture between all a plant's sensors now displays above the moisture bar
+									
+	pre-5.1.1	3/6/21			Changes in this version:
+									-Small bug fixes
+									-Added character limit to plant names
 											
 
 FULL-RELEASES--

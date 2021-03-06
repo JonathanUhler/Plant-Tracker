@@ -50,6 +50,10 @@
 // pre-5.1.0	3/1/21			Changes in this version:
 //									-Fixed a bug with multiple plants of the same name; user's can no longer have multiple plants with the same name
 //									-Average moisture between all a plant's sensors now displays above the moisture bar
+//
+// pre-5.1.1	3/6/21			Changes in this version:
+//									-Small bug fixes
+//									-Added character limit to plant names
 
 
 // TO-DO--
@@ -89,6 +93,7 @@ class ViewController: UIViewController {
 	var sensorJSON = [] as Array<Dictionary<String, Any>>
 	var pendingPlantDataRequests = 0
 	let maxPlants = 7
+	let maxPlantName = 15
 	
 	
 	// Instace of CocoaMQTT as mqttClient
@@ -464,7 +469,7 @@ class ViewController: UIViewController {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * CGFloat((0.67 - (numWidth / 110))), y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * CGFloat(numWidth / 30), h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 			// Display the sensor data
 			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.225) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
 		}
@@ -562,6 +567,7 @@ class ViewController: UIViewController {
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
 			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
 			"ERR_plantNameTaken"		:	"The name of the plant you are trying to add is already taken",
+			"ERR_plantNameTooLong"		:	"The name of the plant you are trying to add is too long. Character limit is \(maxPlantName)"
 		]
 		
 		// Create a new alert controller and specify the title and message
@@ -676,6 +682,7 @@ class ViewController: UIViewController {
 			"ERR_addPlantSensorNumIssue":	popupError,
 			"ERR_invalidPlantSensorID"	:	popupError,
 			"ERR_plantNameTaken"		:	popupError,
+			"ERR_plantNameTooLong"		:	popupError,
 		]
 		
 		// Process the message: run a function, throw an error, etc

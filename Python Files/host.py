@@ -14,6 +14,7 @@ serverTo = "rpi/torpi"
 serverFrom = "rpi/fromrpi"
 serverName = "Host-RPI3B+" # Emily for short
 maxPlants = 7 # Maximum number of plants the user can have
+maxPlantName = 15 # Longest plant name the user can have
 
 
 # ======================================================================
@@ -143,6 +144,10 @@ def REQ_addNewPlant(msg):
         if (userdata[0] == plants[i]["Name"]):
             operationError("ERR_plantNameTaken", "null", msg["sender"])
             return
+    # Make sure the plant name isn't too long
+    if (len(userdata[0]) > maxPlantName):
+        operationError("ERR_plantNameTooLong", "null", msg["sender"])
+        return
         
     # Init the data to save
     plants.append({

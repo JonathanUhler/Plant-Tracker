@@ -94,6 +94,8 @@ A list of error tags are their meanings is:
 "ERR_invalidPlantSensorID" // The sensor identifier the user entered was not found or is invalid
 
 "ERR_plantNameTaken" // The user is trying to add a plant whose name is already taken
+
+"ERR_plantNameTooLong" // The user is trying to add a plant whose name is too long
 ```
 
 
