@@ -54,6 +54,10 @@
 // pre-5.1.1	3/6/21			Changes in this version:
 //									-Small bug fixes
 //									-Added character limit to plant names
+//
+// pre-5.1.2	3/6/21			Changes in this version:
+//									-Moved some elements of the UI
+//									-Added current version (current not used, but planned to be checked by the server to make sure a given client is acceptable)
 
 
 // TO-DO--
@@ -76,6 +80,8 @@ import CocoaMQTT // MQTT server support
 class ViewController: UIViewController {
 	
 	// MARK: Init Class Variables
+	// App version
+	let PlantTrackerVersion = "pre-5.1.2"
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
 	lazy var screenWidth = screenRect.size.width
@@ -135,8 +141,8 @@ class ViewController: UIViewController {
 			self.decodeIncomingResponse(entireMsg: message.string!)
 		}
 		
-		// Add in a line
-		displayRect(x: screenWidth * 0.055, y: screenHeight * 0.175, w: screenWidth * 0.9, h: 1, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
+		// Display the app version
+		displayText(x: screenWidth * 0.35, y: screenHeight * 0.18, w: screenWidth, h: 15, msg: "Version: \(PlantTrackerVersion)", color: UIColor.black, fontSize: 15)
 		
 	}
 	// end: func viewDidLoad
@@ -305,7 +311,7 @@ class ViewController: UIViewController {
 	//
 	func refreshPlantsDisplayed() {
 		// Remove any current plants being displayed
-		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.23, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.6, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 		// Refresh the plant data
 		self.plantJSON = []
 		self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
@@ -344,12 +350,12 @@ class ViewController: UIViewController {
 				let plantName = dictionary[i]["Name"]!
 
 				// Display a box
-				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
-				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white, seesTaps: true, plantInfo: dictionary[i])
+				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
+				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white, seesTaps: true, plantInfo: dictionary[i])
 				// Display the name of the plant
-				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.23) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
+				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
 				// Display the moisture bar
-				displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.275) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
+				displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			}
 		}
 		
@@ -469,9 +475,9 @@ class ViewController: UIViewController {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.235) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 			// Display the sensor data
-			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.225) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
+			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
 		}
 	}
 	// end: func RES_plantSensorData

@@ -127,6 +127,10 @@ PRE-RELEASES--
 	pre-5.1.1	3/6/21			Changes in this version:
 									-Small bug fixes
 									-Added character limit to plant names
+									
+	pre-5.1.2	3/6/21			Changes in this version:
+									-Moved some elements of the UI
+									-Added current version (current not used, but planned to be checked by the server to make sure a given client is acceptable)
 											
 
 FULL-RELEASES--
