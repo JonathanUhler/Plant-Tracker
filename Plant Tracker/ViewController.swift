@@ -61,6 +61,9 @@
 //
 // pre-5.1.3	3/9/21			Changes in this version:
 //									-Small patches following pre-5.1.2
+//
+// pre-5.1.4	3/10/21			Changes in this version:
+//									-Changed clientName from UIDevice.current.name to UIDevice.current.identifierForVendor.uuidString
 
 
 // TO-DO--
@@ -84,7 +87,7 @@ class ViewController: UIViewController {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.1.3"
+	let PlantTrackerVersion = "pre-5.1.4"
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
 	lazy var screenWidth = screenRect.size.width
@@ -93,7 +96,7 @@ class ViewController: UIViewController {
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
 	// Host IP address
-	let clientName = UIDevice.current.name
+	let clientName = UIDevice.current.identifierForVendor!.uuidString
 	let hostName = "Host-RPI3B+"
 	var hostAddress = ""
 	

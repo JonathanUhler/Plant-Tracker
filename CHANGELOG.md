@@ -134,6 +134,9 @@ PRE-RELEASES--
 									
 	pre-5.1.3	3/9/21			Changes in this version:
 									-Small patches following pre-5.1.2
+									
+	pre-5.1.4	3/10/21			Changes in this version:
+									-Changed clientName from UIDevice.current.name to UIDevice.current.identifierForVendor.uuidString
 											
 
 FULL-RELEASES--
