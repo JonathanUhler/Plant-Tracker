@@ -131,6 +131,9 @@ PRE-RELEASES--
 	pre-5.1.2	3/6/21			Changes in this version:
 									-Moved some elements of the UI
 									-Added current version (current not used, but planned to be checked by the server to make sure a given client is acceptable)
+									
+	pre-5.1.3	3/9/21			Changes in this version:
+									-Small patches following pre-5.1.2
 											
 
 FULL-RELEASES--

@@ -55,9 +55,12 @@
 //									-Small bug fixes
 //									-Added character limit to plant names
 //
-// pre-5.1.2	3/6/21			Changes in this version:
+// pre-5.1.2	3/9/21			Changes in this version:
 //									-Moved some elements of the UI
 //									-Added current version (current not used, but planned to be checked by the server to make sure a given client is acceptable)
+//
+// pre-5.1.3	3/9/21			Changes in this version:
+//									-Small patches following pre-5.1.2
 
 
 // TO-DO--
@@ -81,7 +84,7 @@ class ViewController: UIViewController {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.1.2"
+	let PlantTrackerVersion = "pre-5.1.3"
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
 	lazy var screenWidth = screenRect.size.width
@@ -311,7 +314,7 @@ class ViewController: UIViewController {
 	//
 	func refreshPlantsDisplayed() {
 		// Remove any current plants being displayed
-		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.6, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 		// Refresh the plant data
 		self.plantJSON = []
 		self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
