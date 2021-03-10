@@ -70,14 +70,17 @@ chmod +x host.py
 
 
 
-# Sensor Setup
+# Sensor Setup (Software)
 The recommended sensors for this project are Adafruit STEMMA Soil Sensors (https://learn.adafruit.com/adafruit-stemma-soil-sensor-i2c-capacitive-moisture-sensor). On the RPI, a few packages will need to be installed. The full list of directions for setup can be found here: https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi and here: https://learn.adafruit.com/adafruit-stemma-soil-sensor-i2c-capacitive-moisture-sensor/python-circuitpython-test.
 
 Installing blinka
 
 ```
+// First run the following command in a command-line
 sudo pip3 install --upgrade setuptools
 
+
+// Next, put the 4 following lines into a file and compile it as a binary. Run this file using "./<file name>"
 cd ~
 
 sudo pip3 install --upgrade adafruit-python-shell
@@ -94,3 +97,10 @@ After installing blinka, run the below line to install the CircuitPython library
 ```
 sudo pip3 install adafruit-circuitpython-seesaw
 ```
+
+
+
+# Sensor Setup (Hardware)
+This project is currently all wired (although solutions for wireless communication between the RPI and sensors are planned). The project uses a breadboard and a T-connecter to allow multiple sensors to be connected to the GPIO pins on the RPI.
+
+In order to connect more than one sensor, the i2c addresses of some sensors must be changed (this is done through a change in the hardware of the sensors that is explained further on Adafruit's website). Once completed, multiple sensors (up to 4) can be used together.
