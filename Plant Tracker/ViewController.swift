@@ -64,6 +64,10 @@
 //
 // pre-5.1.4	3/10/21			Changes in this version:
 //									-Changed clientName from UIDevice.current.name to UIDevice.current.identifierForVendor.uuidString
+//
+// pre-5.2.0	3/14/21			Changes in this version:
+//									-Moisture values now displayed in a 1-10 scale
+//									-Moisture "bars" now visually display the value
 
 
 // TO-DO--
@@ -360,8 +364,6 @@ class ViewController: UIViewController {
 				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white, seesTaps: true, plantInfo: dictionary[i])
 				// Display the name of the plant
 				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
-				// Display the moisture bar
-				displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			}
 		}
 		
@@ -481,9 +483,14 @@ class ViewController: UIViewController {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.03, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 			// Display the sensor data
 			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
+			
+			// Display the moisture bar
+			displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
+			// Display the dot on the moisture bar
+			displayRect(x: (screenWidth * 0.5) + CGFloat(sensorToDisplay * 15), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
 		}
 	}
 	// end: func RES_plantSensorData
@@ -832,11 +839,9 @@ class ViewController: UIViewController {
 	// None
 	//
 	@IBAction func requestData(_ sender: UIButton) {
-		
 		// Request the plant data
 		sensorJSON = []
 		publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "all", operation: "REQ_plantSensorData")
-		
 	}
 	// end: func requestData
 	
@@ -971,6 +976,7 @@ class ViewController: UIViewController {
 	
 }
 // end: class ViewController
+
 
 
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+

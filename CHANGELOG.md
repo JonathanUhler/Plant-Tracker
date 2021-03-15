@@ -137,6 +137,10 @@ PRE-RELEASES--
 									
 	pre-5.1.4	3/10/21			Changes in this version:
 									-Changed clientName from UIDevice.current.name to UIDevice.current.identifierForVendor.uuidString
+									
+	pre-5.2.0	3/14/21			Changes in this version:
+									-Moisture values now displayed in a 1-10 scale
+									-Moisture "bars" now visually display the value
 											
 
 FULL-RELEASES--
