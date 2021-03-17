@@ -38,14 +38,36 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
+// pre-5.0.0	2/28/21			Changes in this version:
+//									-Major data structure changes
+//									-sensors.py added to read sensor data
+//									-Sensor functionality added
+//									-Sensor data will display when clicking on a plant
+//
+// pre-5.0.1	2/28/21			Changes in this version:
+//									-Fixed a bug with sensor data being duplicated
+//
+// pre-5.1.0	3/1/21			Changes in this version:
+//									-Fixed a bug with multiple plants of the same name; user's can no longer have multiple plants with the same name
+//									-Average moisture between all a plant's sensors now displays above the moisture bar
+//
+// pre-5.1.1	3/6/21			Changes in this version:
+//									-Small bug fixes
+//									-Added character limit to plant names
+//
+// pre-5.1.2	3/9/21			Changes in this version:
+//									-Moved some elements of the UI
+//									-Added current version (current not used, but planned to be checked by the server to make sure a given client is acceptable)
+//
+// pre-5.1.3	3/9/21			Changes in this version:
+//									-Small patches following pre-5.1.2
+//
+// pre-5.1.4	3/10/21			Changes in this version:
+//									-Changed clientName from UIDevice.current.name to UIDevice.current.identifierForVendor.uuidString
+//
 // pre-5.2.0	3/14/21			Changes in this version:
 //									-Moisture values now displayed in a 1-10 scale
 //									-Moisture "bars" now visually display the value
-//
-// pre-5.2.0	3/16/21			Changes in this version:
-//									-Plant boxes are now instances of the PlantBox structure
-//									-handleTap function reworked
-//									-getHostIP function now works properly; the current host IP will display as the default value of the textbox
 
 
 // TO-DO--
@@ -63,118 +85,7 @@ import CocoaMQTT // MQTT server support
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // MARK: struct PlantBox
 //
-struct PlantBox {
-	
-	// Basic information about a plant
-	var plantName: String = ""
-	var plantSensors: [[String:Any]] = [["":""]] // Sensor information (moisture level, temperature, sensor ID, plant name the sensor belongs to)
-	
-	// Dimensions and location of the plant's box
-	var boxX: CGFloat = 0
-	var boxY: CGFloat = 0
-	var boxW: CGFloat = 0
-	var boxH: CGFloat = 0
-	
-	// The plant box as a UIView
-	var newPlantBox: UIView = UIView()
-	var boxView: UIView = UIView()
-	
-	// Information about the device size
-	let screenRect = UIScreen.main.bounds
-	lazy var screenWidth = screenRect.size.width
-	lazy var screenHeight = screenRect.size.height
-	
-	
-	// ====================================================================================================
-	// MARK: func addPlantBox
-	//
-	// Creates a new plant box
-	//
-	// Arguments--
-	//
-	// None
-	//
-	// Returns--
-	//
-	// None
-	//
-	mutating func addPlantBox() {
-
-		// Display a box
-		addRect(x: boxX, y: boxY, w: boxW, h: boxH, color: UIColor.white)
-		// Display the name of the plant
-		addText(x: boxX + screenWidth * 0.03, y: boxY, w: boxW * 0.45, h: boxH, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
-		
-	}
-	// end: func addPlantBox
-
-
-	// ==============================================================================================
-	// MARK: private func addRect
-	//
-	// A function to add a rectangular box to the plant box UIView
-	//
-	// Arguments--
-	//
-	// x:			The x position of the rectangle
-	//
-	// y:			The y position of the rectangle
-	//
-	// w:			The width of the rectangle
-	//
-	// h:			The height of the rectangle
-	//
-	// font:		The font size of the retangle
-	//
-	// Returns--
-	//
-	// None
-	//
-	private mutating func addRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
-		
-		newPlantBox = UIView(frame: CGRect(x: x, y: y, width: w, height: h)) // Define the limits of the box
-		newPlantBox.layer.borderWidth = 3 // Set the border thickness
-		newPlantBox.layer.borderColor = UIColor.black.cgColor // Set the border color
-		newPlantBox.backgroundColor = color // Set the background color of the box (everything within the border)
-		
-		boxView.addSubview(newPlantBox) // Save the new box UIView
-
-	} // end: func addRect
-
-
-	// ==============================================================================================
-	// MARK: private func addText
-	//
-	// A function to add text to the plant box UIView
-	//
-	// Arguments--
-	//
-	// x:		The x position of the text
-	//
-	// y:		The y position of the text
-	//
-	// w:		The width of the text box
-	//
-	// h:		The height of the text box
-	//
-	// color:	The color of the text
-	//
-	// Returns--
-	//
-	// None
-	//
-	private func addText(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, msg: String, color: UIColor, fontSize: CGFloat) {
-
-		let textRect: CGRect = CGRect(x: x, y: y, width: w, height: h)
-		let textLabel: UILabel = UILabel(frame: textRect)
-		textLabel.text = msg
-		textLabel.textAlignment = .left
-		textLabel.font = UIFont(name: "Gill Sans", size: fontSize)
-		textLabel.textColor = color
-		
-		boxView.addSubview(textLabel)
-
-	} // end: func displayText
+struct plantBox {
 	
 }
 // end: struct PlantBox
@@ -184,37 +95,29 @@ struct PlantBox {
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // MARK: class ViewController
 //
-class ViewController: UIViewController, UITextFieldDelegate {
+class ViewController: UIViewController {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.2.0"
-	
+	let PlantTrackerVersion = "pre-5.1.4"
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
 	lazy var screenWidth = screenRect.size.width
 	lazy var screenHeight = screenRect.size.height
-	
 	// Declare the topics used to send and receive data
 	let rpi_torpi = "rpi/torpi"
 	let rpi_fromrpi = "rpi/fromrpi"
-	
-	// Server information
+	// Host IP address
 	let clientName = UIDevice.current.identifierForVendor!.uuidString
 	let hostName = "Host-RPI3B+"
 	var hostAddress = ""
 	
-	// Create various datastructure
-	var plantJSON = [] as Array // Plant datastructure
-	var sensorJSON = [] as Array<Dictionary<String, Any>> // Sensor datastructure
-	var tapGestureList = [] as Array<ArgumentTapGestureRecognizer> // Tap gesture location datastructure
-	
+	// Create the plant and sensor data-structure
+	var plantJSON = [] as Array
+	var sensorJSON = [] as Array<Dictionary<String, Any>>
 	var pendingPlantDataRequests = 0
 	let maxPlants = 7
 	let maxPlantName = 15
-	
-	// Storyboard elements
-	@IBOutlet weak var hostIPTextBox: UITextField!
 	
 	
 	// Instace of CocoaMQTT as mqttClient
@@ -245,9 +148,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		
 		// Init the host address
 		hostAddress = UserDefaults.standard.string(forKey: "hostAddress") ?? ""
-		hostIPTextBox.text = hostAddress
-		self.hostIPTextBox.delegate = self
 		mqttClient = CocoaMQTT(clientID: UIDevice.current.identifierForVendor!.uuidString, host: hostAddress, port: 1883)
+		
+		let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
+		view.addGestureRecognizer(tap)
 		
 		// Constantly pay attention to incoming messages and decode them
 		mqttClient.didReceiveMessage = { mqtt, message, id in
@@ -281,11 +185,24 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	// Returns--
 	// None
 	//
-	func displayRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
+	func displayRect(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor, seesTaps: Bool, plantInfo:[String:Any]!) {
+		
 		let rect = CGRect(x: x, y: y, width: w, height: h)
 		let view = UIView(frame: rect)
 		view.backgroundColor = color
+		
+		if (seesTaps) {
+			let tapGesture = ArgumentTapGestureRecognizer(target: self, action: #selector(handleTap(singleTap:)))
+			tapGesture.x = x
+			tapGesture.y = y
+			tapGesture.w = w
+			tapGesture.h = h
+			tapGesture.plantInfo = plantInfo!
+			view.addGestureRecognizer(tapGesture)
+		}
+
 		self.view.addSubview(view)
+		
 	} // end: func displayRect
 	
 	
@@ -414,10 +331,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	//
 	func refreshPlantsDisplayed() {
 		// Remove any current plants being displayed
-		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white)
+		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 		// Refresh the plant data
 		self.plantJSON = []
-		tapGestureList = []
 		self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "", operation: "REQ_numPlants")
 	}
 	// end: func refreshPlantsDisplayed
@@ -438,31 +354,26 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	//
 	func displayPlantsOnScreen() {
 		
-		// Get the current number of plants
-		let numPlants = plantJSON.count
+		var numPlants = plantJSON.count
 		
+		// Ignore any plants that are after the cap
+		if (numPlants > maxPlants) {
+			publishOutgoingRequest(msgID: "0", sender: "\(clientName)", receiver: "\(hostName)", payload: "", operation: "ERR_tooManyPlants")
+			numPlants = maxPlants // Set the number of plants to be displayed to the maximum
+		}
+		
+		// Display each plant and its information
 		for i in 0...numPlants - 1 {
-			// For each plant, create a new instance of the PlantBox class and assign each of an user's plants a plant "box"
+			// Make sure the compiler is aware that plantJSON is an array of dictionaries (if this is not here, it would be assumed that plantJSON was an array of type 'Any' during runtime)
 			if let dictionary = plantJSON as? [[String:Any]] {
-				var plantBox = PlantBox() // Create a new instance of the PlantBox class
-				plantBox.plantName = dictionary[i]["Name"] as! String // Set the plant's name
-				plantBox.plantSensors = sensorJSON // Set the plant's sensor info
-				plantBox.boxX = screenWidth * 0.05 // Set the box's x position
-				plantBox.boxY = (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)) // Set the box's y position
-				plantBox.boxW = screenWidth * 0.9 // Set the box's width
-				plantBox.boxH = screenHeight * 0.09 // Set the box's height
-				
-				let tapGesture = ArgumentTapGestureRecognizer(target: self, action: #selector(handleTap(singleTap:))) // Create a new tap recognizer
-				tapGesture.x = plantBox.boxX // Set the x position of the tap box
-				tapGesture.y = plantBox.boxY // Set the y position of the tap box
-				tapGesture.w = plantBox.boxW // Set the width of the tap box
-				tapGesture.h = plantBox.boxH // Set the height of the tap box
-				tapGesture.plantInfo = (plantJSON[i] as? [String:Any])! // Set the data for the tap box to inherit
-				
-				plantBox.addPlantBox() // Run the main function of the PlantBox class to add the new plant box
-				view.addGestureRecognizer(tapGesture) // Add the tap gesture recognizer
-				self.view.addSubview(plantBox.boxView) // Add the new plant box to the view
-				tapGestureList.append(tapGesture) // Add the tap gesture for each plant to the list
+				// Init plant info variables
+				let plantName = dictionary[i]["Name"]!
+
+				// Display a box
+//				displayRect(x: screenWidth * 0.05, y: (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.9, h: screenHeight * 0.09, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
+				displayRect(x: screenWidth * 0.06, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.88, h: screenHeight * 0.08, color: UIColor.white, seesTaps: true, plantInfo: dictionary[i])
+				// Display the name of the plant
+				displayText(x: screenWidth * 0.1, y: (screenHeight * 0.21) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.09, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
 			}
 		}
 		
@@ -486,62 +397,54 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	@objc func handleTap(singleTap: ArgumentTapGestureRecognizer) {
 		// Once the tap stops, execute any code
 		if (singleTap.state == UIGestureRecognizer.State.ended) {
-
-			// Define the point the user tapped the screen
+			
+			// Define the point the user tapped at
 			let pointOfTap = singleTap.location(in: self.view)
+			// Define the boundary of a plant box
+			let plantBox = CGRect(x: singleTap.x!, y: singleTap.y!, width: singleTap.w!, height: singleTap.h!)
 
-			// Search though each valid tap region to figure out which one the user tapped in
-			for i in tapGestureList {
-				// Define the boundary of a plant's box
-				let plantBox = CGRect(x: i.x!, y: i.y!, width: i.w!, height: i.h!)
+			// If the tap was within the plant box
+			if (plantBox.contains(pointOfTap)) {
 				
-				// If the tap was within the plant box
-				if (plantBox.contains(pointOfTap)) {
-
-					// Create the message that is displayed (this is what actually contains the sensor readings)
-					var sensorDetailMsg = ""
-
-					// Fill in the description for the popup alert which includes the sensor values and information
-					// Everything in this conditional if-else is about generating the message based on the sensor values
-					// Make sure the user has updated the sensors
-					if (sensorJSON.count > 0) {
-
-						// Add in information about the sensors as a message
-						for j in 0...sensorJSON.count - 1 { // For every sensor of a single given plant
-
-							// Add a message (the sensor name/ID and its value) to the alert for each sensor
-							if (i.plantInfo!["Name"] as! String == sensorJSON[j]["plant"] as! String) {
-								// Add sensor data to the messsage
-								let msgAddition = "\n\(String(describing: sensorJSON[j]["sensor"]!)) - Moisture: \(sensorJSON[j]["moisture"] ?? "no value"), Temp: \(sensorJSON[j]["temperature"] ?? "no value")°F"
-								sensorDetailMsg.append(msgAddition) // Add each sensor and its value to the total message
-							}
-
-						}
-					}
-					else {
-						sensorDetailMsg.append("\nNo data. Try pressing \'Update Plant Data\' first")
-					}
+				// Create the message that is displayed (this is what actually contains the sensor readings)
+				var sensorDetailMsg = ""
+				
+				// Make sure the user has updated the sensors
+				if (sensorJSON.count > 0) {
 					
-					// Add everything into a popup alert and display it
-					// Add in the title and message
-					let addPlantAlert = UIAlertController(title: "\(i.plantInfo!["Name"]!) Details", message: sensorDetailMsg, preferredStyle: .alert)
-
-					// Add in an action for the confirm button and code to run when this button is pressed
-					let settingsAction = UIAlertAction(title: "Settings", style: .default) { (_) in
-						self.plantSettings(plantInfo: i.plantInfo!) // Call a seperate settings function below
+					// Add in information about the sensors as a message
+					for i in 0...sensorJSON.count - 1 { // For every sensor of a single given plant
+							
+						// Add a message (the sensor name/ID and its value) to the alert for each sensor
+						if (singleTap.plantInfo!["Name"] as! String == sensorJSON[i]["plant"] as! String) {
+							// Add sensor data to the messsage
+							let msgAddition = "\n\(String(describing: sensorJSON[i]["sensor"]!)) - Moisture: \(sensorJSON[i]["moisture"] ?? "no value"), Temp: \(sensorJSON[i]["temperature"] ?? "no value")°F"
+							sensorDetailMsg.append(msgAddition) // Add each sensor and its value to the total message
+						}
+					
 					}
-					// Cancel button does nothing
-					let okayAction = UIAlertAction(title: "Okay", style: .cancel) { (_) in }
-
-					// Add the buttons
-					addPlantAlert.addAction(settingsAction)
-					addPlantAlert.addAction(okayAction)
-
-					// Show the alert
-					self.present(addPlantAlert, animated: true, completion: nil)
-
-					break;
 				}
+				else {
+					sensorDetailMsg.append("\nNo data. Try pressing \'Update Plant Data\' first")
+				}
+				
+				// Add in the title and message
+				let addPlantAlert = UIAlertController(title: "\(singleTap.plantInfo!["Name"]!) Details", message: sensorDetailMsg, preferredStyle: .alert)
+				
+				// Add in an action for the confirm button and code to run when this button is pressed
+				let settingsAction = UIAlertAction(title: "Settings", style: .default) { (_) in
+					self.plantSettings(plantInfo: singleTap.plantInfo!) // Call a seperate settings function below
+				}
+				// Cancel button does nothing
+				let okayAction = UIAlertAction(title: "Okay", style: .cancel) { (_) in }
+				
+				// Add the buttons
+				addPlantAlert.addAction(settingsAction)
+				addPlantAlert.addAction(okayAction)
+				
+				// Show the alert
+				self.present(addPlantAlert, animated: true, completion: nil)
+				
 			}
 		}
 	}
@@ -590,14 +493,14 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white)
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 			// Display the sensor data
 			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
 			
 			// Display the moisture bar
 			displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			// Display the dot on the moisture bar
-			displayRect(x: (screenWidth * 0.5) + CGFloat(sensorToDisplay * 15), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black)
+			displayRect(x: (screenWidth * 0.5) + CGFloat(sensorToDisplay * 15), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black, seesTaps: false, plantInfo: ["":""])
 		}
 	}
 	// end: func RES_plantSensorData
@@ -688,7 +591,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			"ERR_missingKeys"			:	"Internal error - submit an issue",
 			"ERR_invalidOpTag"			:	"Internal error - submit an issue",
 			"ERR_noPlantDataToRequest"	:	"You do not have any existing plant data",
-			"ERR_tooManyPlants"			:	"You have reached the maximum of \(maxPlants) plant",
+			"ERR_tooManyPlants"			:	"You have reached the maximum number of plants",
 			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant",
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
 			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
@@ -834,7 +737,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		
 	}
 	// end: func decodeIncomingResponse
-	
+
 	
 	// ====================================================================================================
 	// MARK: func getHostIP
@@ -849,14 +752,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	//
 	// None
 	//
-	func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-		let newIP = "\(String(describing: hostIPTextBox.text))"
+	@IBAction func getHostIP(_ sender: UITextField) {
+		let newIP = "\(String(describing: sender.text))"
 		hostAddress = newIP.components(separatedBy: "\"")[1] // Get the new IP
 		UserDefaults.standard.setValue(hostAddress, forKey: "hostAddress")
 		mqttClient = CocoaMQTT(clientID: clientName, host: hostAddress, port: 1883) // Try to connect to the new address
-		
-		self.view.endEditing(true)
-		return false
 	}
 	// end: func getHostIP
 	
@@ -882,13 +782,13 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 			// Tell the user they have connected
 			displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 90, h: 15, msg: "Connected", color: UIColor.green, fontSize: 15)
 			
 			if (hostAddress == "") {
 				// Clear any previous status message
-				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 				// Tell the user there is no host address
 				displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15, msg: "No host address", color: UIColor.red, fontSize: 15)
 				// Turn off the switch
@@ -913,7 +813,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 				sender.setOn(false, animated: true)
 	
 				// Clear any previous status message
-				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white, seesTaps: false, plantInfo: ["":""])
 				// Tell the user the disconnection status
 				if (error == nil) {
 					// If the client disconnected on their own with the button
@@ -983,7 +883,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			
 			// Create a new alert controller and specify the title and message
 			let sensorAlert = UIAlertController(title: "New Plant", message: "Enter information about each sensor", preferredStyle: .alert)
-			
 			// Add in an action for the confirm button and code to run when this button is pressed
 			let saveAction = UIAlertAction(title: "Add Plant", style: .default) { (_) in
 				// Get the sensor info into an array
@@ -998,7 +897,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
 				// Refresh plant data
 				self.refreshPlantsDisplayed()
 			}
-			
 			// Cancel button does nothing
 			let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
 			
@@ -1064,11 +962,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		let deleteAction = UIAlertAction(title: "Delete Plant", style: .default) { (_) in
 			// Delete the plant
 			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantInfo["Name"]!)", operation: "REQ_deletePlant")
-			
 			// Refresh plant data
 			self.refreshPlantsDisplayed()
 		}
-		
 		// Save button saves any new plants data
 		let saveAction = UIAlertAction(title: "Save", style: .cancel) { (_) in
 			//MARK: // NOTE: Tell the server new plant information was added

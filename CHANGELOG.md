@@ -141,6 +141,11 @@ PRE-RELEASES--
 	pre-5.2.0	3/14/21			Changes in this version:
 									-Moisture values now displayed in a 1-10 scale
 									-Moisture "bars" now visually display the value
+									
+	pre-5.2.0	3/16/21			Changes in this version:
+									-Plant boxes are now instances of the PlantBox structure
+									-handleTap function reworked
+									-getHostIP function now works properly; the current host IP will display as the default value of the textbox
 											
 
 FULL-RELEASES--

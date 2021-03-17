@@ -9,12 +9,15 @@ import sensors # Import the sensors.py file
 # import RPi.GPIO as gpio # Import GPIO --> This will not be used in this case
 
 
-serverAddress = "172.20.8.47"
-serverTo = "rpi/torpi"
-serverFrom = "rpi/fromrpi"
+serverAddress = "172.20.8.47" # IP address of the RPI
+serverTo = "rpi/torpi" # From client to server stream
+serverFrom = "rpi/fromrpi" # From server to client stream
 serverName = "Host-RPI3B+" # Emily for short
+
 maxPlants = 7 # Maximum number of plants the user can have
 maxPlantName = 15 # Longest plant name the user can have
+
+errCausingHash = "null" # If an error occurs, this is sent back to the client who caused the error for debug
 
 
 # ======================================================================
@@ -35,7 +38,7 @@ def REQ_plantSensorData(msg):
         # An error occured while reading plant information from the users's .json file
         except:
             # If the requesting client has no plant data, throw an error
-            operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
+            operationError("ERR_noPlantDataToRequest", errCausingHash, msg["sender"])
             return
                 
         # Get the data from the sensors
@@ -53,12 +56,12 @@ def REQ_plantSensorData(msg):
                     try:
                         sensorData = sensors.readSensor(int(sensorsParsed[sensor], 16))
                     except:
-                        operationError("ERR_invalidPlantSensorID", "null", msg["sender"])
+                        operationError("ERR_invalidPlantSensorID", errCausingHash, msg["sender"])
                         return
                     
                     # If the sensor ID is invalid, throw an error
                     if (sensorData == "ERR_invalidPlantSensorID"):
-                        operationError("ERR_invalidPlantSensorID", "null", msg["sender"])
+                        operationError("ERR_invalidPlantSensorID", errCausingHash, msg["sender"])
                         return
                         
                     # If the data was valid, save it
@@ -137,16 +140,16 @@ def REQ_addNewPlant(msg):
         
     # The user already has the maximum number of plants
     if (len(plants) >= maxPlants):
-        operationError("ERR_tooManyPlants", "null", msg["sender"])
+        operationError("ERR_tooManyPlants", errCausingHash, msg["sender"])
         return
     # The user already has a plant with this name
     for i in range(len(plants)):
         if (userdata[0] == plants[i]["Name"]):
-            operationError("ERR_plantNameTaken", "null", msg["sender"])
+            operationError("ERR_plantNameTaken", errCausingHash, msg["sender"])
             return
     # Make sure the plant name isn't too long
     if (len(userdata[0]) > maxPlantName):
-        operationError("ERR_plantNameTooLong", "null", msg["sender"])
+        operationError("ERR_plantNameTooLong", errCausingHash, msg["sender"])
         return
         
     # Init the data to save
@@ -176,7 +179,7 @@ def REQ_deletePlant(msg):
             plants = json.load(infile)
     # If the requesting client has no plant data, throw an error
     else:
-        operationError("ERR_noPlantDataToRequest", "null", msg["sender"])
+        operationError("ERR_noPlantDataToRequest", errCausingHash, msg["sender"])
         return
         
     # Search for and remove the desired plant
@@ -190,7 +193,7 @@ def REQ_deletePlant(msg):
             return
         # If the plant was not found, throw an error
         if (i >= len(plants) - 1):
-            operationError("ERR_cannotDeletePlant", "null", msg["sender"])
+            operationError("ERR_cannotDeletePlant", errCausingHash, msg["sender"])
 # end: def REQ_deletePlant
 
 
@@ -291,21 +294,23 @@ def decodeIncomingRequest(client, userdata, msg):
     
     # Decode the message
     entireMsg = msg.payload.decode(encoding='UTF-8')
-    errMsg = entireMsg.replace(";", "|")
-    errMsg = errMsg.replace(":", "-")
+    globals()['errCausingHash'] = entireMsg.replace(";", "|")
+    globals()['errCausingHash'] = globals()['errCausingHash'].replace(":", "-")
     
+    # Split the message into its elements
     msgElements = entireMsg.split(";")
     msgHash = {}
     
+    # Search through all the elements to make sure they are valid
     for i in msgElements:
         keyValue = i.split(":")
 
         # Confirm there is one key and one value only
         if (len(keyValue) > 2): 
-            operationError("ERR_missingKeys", errMsg, msgHash["sender"])
+            operationError("ERR_missingKeys", errCausingHash, msgHash["sender"])
             return
         elif (len(keyValue) < 2): 
-            operationError("ERR_missingVals", errMsg, msgHash["sender"])
+            operationError("ERR_missingVals", errCausingHash, msgHash["sender"])
             return
 
         key = keyValue[0]
@@ -315,7 +320,7 @@ def decodeIncomingRequest(client, userdata, msg):
     
     # Make sure there is the reqired number of elements in the hash
     if (not (len(msgHash) == 5)): 
-        operationError("ERR_hashLength", errMsg, msgHash["sender"])
+        operationError("ERR_hashLength", errCausingHash, msgHash["sender"])
         return
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
@@ -350,7 +355,7 @@ def decodeIncomingRequest(client, userdata, msg):
             return
         else:
             # If the tag is invalid, throw an error
-            operationError("ERR_invalidOpTag", errMsg, msgHash["sender"])
+            operationError("ERR_invalidOpTag", errCausingHash, msgHash["sender"])
             return
         
     print("New operation " + msgHash["operation"] + " with payload \"" + msgHash["payload"] + "\". Sender " + msgHash["sender"] + ", Receiver: " + msgHash["receiver"] + ", with ID " + msgHash["ID"])
