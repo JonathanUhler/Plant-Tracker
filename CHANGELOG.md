@@ -146,6 +146,10 @@ PRE-RELEASES--
 									-Plant boxes are now instances of the PlantBox structure
 									-handleTap function reworked
 									-getHostIP function now works properly; the current host IP will display as the default value of the textbox
+									
+	pre-5.3.1	3/16/21			Changes in this version:
+									-Small UI changes
+									-Fixed bug outlined in issue #20
 											
 
 FULL-RELEASES--

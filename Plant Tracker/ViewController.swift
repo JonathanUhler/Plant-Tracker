@@ -42,10 +42,14 @@
 //									-Moisture values now displayed in a 1-10 scale
 //									-Moisture "bars" now visually display the value
 //
-// pre-5.2.0	3/16/21			Changes in this version:
+// pre-5.3.0	3/16/21			Changes in this version:
 //									-Plant boxes are now instances of the PlantBox structure
 //									-handleTap function reworked
 //									-getHostIP function now works properly; the current host IP will display as the default value of the textbox
+//
+// pre-5.3.1	3/17/21			Changes in this version:
+//									-Small UI changes
+//									-Fixed bug outlined in issue #20
 
 
 // TO-DO--
@@ -188,7 +192,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.2.0"
+	let PlantTrackerVersion = "pre-5.3.0"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -209,9 +213,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	var sensorJSON = [] as Array<Dictionary<String, Any>> // Sensor datastructure
 	var tapGestureList = [] as Array<ArgumentTapGestureRecognizer> // Tap gesture location datastructure
 	
-	var pendingPlantDataRequests = 0
-	let maxPlants = 7
-	let maxPlantName = 15
+	var pendingPlantDataRequests = 0 // Makes sure the plant boxes are only displayed once all the plant data has arrived form the server
+	let maxPlants = 7 // Maximum number of plants the user can have
+	let maxPlantName = 15 // Maximum character length a plant can be named
 	
 	// Storyboard elements
 	@IBOutlet weak var hostIPTextBox: UITextField!
@@ -552,15 +556,27 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	// MARK: RES_plantSensorData
 	//
 	func RES_plantSensorData(msg: [String:String]) {
+		// Display the points on the moisutre bars that show where the plant's overall moisture is
+		var numPlants = plantJSON.count
+		
 		// Store the sensor data in a variable
 		var sensorDataAsStr = msg["payload"]
 		// Format the string so that the convertStringToDictionary function can convert it into a dictionary
 		sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "-", with: ":"); sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "\'", with: "\"")
-		// Turn the data from a string into an array
-		sensorJSON.append(convertStringToDictionary(text: sensorDataAsStr!)!)
+		let sensorDataAsDict = convertStringToDictionary(text: sensorDataAsStr!)
 		
-		// Display the points on the moisutre bars that show where the plant's overall moisture is
-		var numPlants = plantJSON.count
+		// If the user rapidly clicks the update button, only keep 1 reading for each plant and discard duplicate plant readings
+		if (sensorJSON.count > 0) {
+			for h in 0...sensorJSON.count - 1 {
+				if (sensorDataAsDict!["plant"] as! String == sensorJSON[h]["plant"] as! String) {
+					return
+				}
+			}
+		}
+		
+		// Turn the data from a string into an array
+		sensorJSON.append(sensorDataAsDict!)
+		print(sensorJSON)
 		
 		// Ignore any plants that are after the cap
 		if (numPlants > maxPlants) {
@@ -590,7 +606,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.215) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white)
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.22) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white)
 			// Display the sensor data
 			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
 			
