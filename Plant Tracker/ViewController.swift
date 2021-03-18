@@ -50,6 +50,8 @@
 // pre-5.3.1	3/17/21			Changes in this version:
 //									-Small UI changes
 //									-Fixed bug outlined in issue #20
+// pre-5.3.2	3/18/21			Changes in this version:
+//									-Fixed a bug that would crash the app if the user disconnected and reconnected their client while getting plant data
 
 
 // TO-DO--
@@ -192,7 +194,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.3.0"
+	let PlantTrackerVersion = "pre-5.3.2"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -576,7 +578,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		
 		// Turn the data from a string into an array
 		sensorJSON.append(sensorDataAsDict!)
-		print(sensorJSON)
+		
+		// Exit the method if the user has 0 plants to avoid a crash
+		if (numPlants <= 0) { return }
 		
 		// Ignore any plants that are after the cap
 		if (numPlants > maxPlants) {
