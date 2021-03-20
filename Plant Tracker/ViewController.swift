@@ -38,26 +38,14 @@
 //
 //	version		  date					changes
 //  -------		--------		-----------------------
-// pre-5.2.0	3/14/21			Changes in this version:
-//									-Moisture values now displayed in a 1-10 scale
-//									-Moisture "bars" now visually display the value
-//
-// pre-5.3.0	3/16/21			Changes in this version:
-//									-Plant boxes are now instances of the PlantBox structure
-//									-handleTap function reworked
-//									-getHostIP function now works properly; the current host IP will display as the default value of the textbox
-//
-// pre-5.3.1	3/17/21			Changes in this version:
-//									-Small UI changes
-//									-Fixed bug outlined in issue #20
-// pre-5.3.2	3/18/21			Changes in this version:
-//									-Fixed a bug that would crash the app if the user disconnected and reconnected their client while getting plant data
-//
 // pre-5.4.0	3/19/21			Changes in this version:
 //									-Documentation changes
 //									-Small UI changes
 //									-Changed the characters for seperation to :/-- and ;/||. This is now in the DOCUMENTATION.md file as well
 //									-Plants can now be edited
+//
+// pre-5.4.1	3/19/21			Changes in this version:
+//									-Fixed an issue with moisture bars rendering in the wrong location on smaller screens
 
 
 // TO-DO--
@@ -199,7 +187,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.4.0"
+	let PlantTrackerVersion = "pre-5.4.1"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -622,7 +610,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			// Display the moisture bar
 			displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			// Display the dot on the moisture bar
-			displayRect(x: (screenWidth * 0.5) + CGFloat(sensorToDisplay * 15), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black)
+			displayRect(x: (screenWidth * 0.5) + (CGFloat(sensorToDisplay) * (screenWidth * 0.039)), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black)
 		}
 	}
 	// end: func RES_plantSensorData
