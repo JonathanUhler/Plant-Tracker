@@ -52,13 +52,18 @@
 //									-Fixed bug outlined in issue #20
 // pre-5.3.2	3/18/21			Changes in this version:
 //									-Fixed a bug that would crash the app if the user disconnected and reconnected their client while getting plant data
+//
+// pre-5.4.0	3/19/21			Changes in this version:
+//									-Documentation changes
+//									-Small UI changes
+//									-Changed the characters for seperation to :/-- and ;/||. This is now in the DOCUMENTATION.md file as well
+//									-Plants can now be edited
 
 
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
 // 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
-// 3) Allow plants to be edited and the new data to be saved
 
 
 // Import libraries
@@ -194,7 +199,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.3.2"
+	let PlantTrackerVersion = "pre-5.4.0"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -564,7 +569,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		// Store the sensor data in a variable
 		var sensorDataAsStr = msg["payload"]
 		// Format the string so that the convertStringToDictionary function can convert it into a dictionary
-		sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "-", with: ":"); sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "\'", with: "\"")
+		sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "--", with: ":"); sensorDataAsStr = sensorDataAsStr?.replacingOccurrences(of: "\'", with: "\"")
 		let sensorDataAsDict = convertStringToDictionary(text: sensorDataAsStr!)
 		
 		// If the user rapidly clicks the update button, only keep 1 reading for each plant and discard duplicate plant readings
@@ -650,7 +655,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		// Get the raw data for 1 plant
 		var newPlant = msg["payload"]!
 		// Format the plant data
-		newPlant = newPlant.replacingOccurrences(of: "||", with: ":"); newPlant = newPlant.replacingOccurrences(of: "\'", with: "\"")
+		newPlant = newPlant.replacingOccurrences(of: "--", with: ":"); newPlant = newPlant.replacingOccurrences(of: "\'", with: "\"")
 		// Convert the plant strings to dictionaries
 		let plantDict = convertStringToDictionary(text: newPlant)
 		
@@ -712,7 +717,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant",
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
 			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
-			"ERR_plantNameTaken"		:	"The name of the plant you are trying to add is already taken",
+			"ERR_plantNameTaken"		:	"The name you are trying to enter is already taken by another plant",
 			"ERR_plantNameTooLong"		:	"The name of the plant you are trying to add is too long. Character limit is \(maxPlantName)"
 		]
 		
@@ -776,8 +781,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	func decodeIncomingResponse(entireMsg: String, ignoreClient: String? = nil) {
 		
 		// Create an error message for if one is needed
-		var errMsg = entireMsg.replacingOccurrences(of: ";", with: "|")
-		errMsg = errMsg.replacingOccurrences(of: ":", with: "-")
+		var errMsg = entireMsg.replacingOccurrences(of: ";", with: "||")
+		errMsg = errMsg.replacingOccurrences(of: ":", with: "--")
 		// Init an empty hash an a list of the key/value pairs
 		let msgElements = entireMsg.split(separator: ";")
 		var msgHash: [String:String] = [:]
@@ -1014,7 +1019,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 				}
 				
 				// Save the new plant
-				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName!)||\(sensors)", operation: "REQ_addNewPlant")
+				self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantName!)--\(sensors)", operation: "REQ_addNewPlant")
 				// Refresh plant data
 				self.refreshPlantsDisplayed()
 			}
@@ -1041,6 +1046,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			// Show the alert
 			self.present(sensorAlert, animated: true, completion: nil)
 		}
+		
 		// Cancel button does nothing
 		let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
 		
@@ -1081,7 +1087,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		let plantSettingsAlert = UIAlertController(title: "\(plantInfo["Name"]!) Settings", message: "Edit plant information below", preferredStyle: .alert)
 		
 		// Add in an action for the confirm button and code to run when this button is pressed
-		let deleteAction = UIAlertAction(title: "Delete Plant", style: .default) { (_) in
+		let deleteAction = UIAlertAction(title: "Delete Plant", style: .destructive) { (_) in
 			// Delete the plant
 			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantInfo["Name"]!)", operation: "REQ_deletePlant")
 			
@@ -1090,18 +1096,27 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		}
 		
 		// Save button saves any new plants data
-		let saveAction = UIAlertAction(title: "Save", style: .cancel) { (_) in
-			//MARK: // NOTE: Tell the server new plant information was added
+		let saveAction = UIAlertAction(title: "Save Changes", style: .default) { [self] (_) in
+			// Change the plant's info
+			self.publishOutgoingRequest(msgID: "0", sender: "\(self.clientName)", receiver: "\(self.hostName)", payload: "\(plantInfo["Name"]!),\(plantSettingsAlert.textFields![0].text!)", operation: "REQ_editPlant")
+			
+			// Refresh plant data
+			self.refreshPlantsDisplayed()
 		}
+		
+		// Cancel button does nothing
+		let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
 		
 		// Add in the textboxes for sensor details and name change
 		plantSettingsAlert.addTextField { (textField) in
-			textField.placeholder = "\(String(describing: plantInfo["Name"]!))"
+			textField.placeholder = "Plant name"
+			textField.text = "\(String(describing: plantInfo["Name"]!))"
 		}
 		
 		// Add the buttons
 		plantSettingsAlert.addAction(deleteAction)
 		plantSettingsAlert.addAction(saveAction)
+		plantSettingsAlert.addAction(cancelAction)
 		
 		// Show the alert
 		self.present(plantSettingsAlert, animated: true, completion: nil)

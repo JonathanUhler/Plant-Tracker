@@ -153,6 +153,12 @@ PRE-RELEASES--
 									
 	pre-5.3.2	3/18/21			Changes in this version:
 									-Fixed a bug that would crash the app if the user disconnected and reconnected their client while getting plant data
+									
+	pre-5.4.0	3/19/21			Changes in this version:
+									-Documentation changes
+									-Small UI changes
+									-Changed the characters for seperation to :/-- and ;/||. This is now in the DOCUMENTATION.md file as well
+									-Plants can now be edited
 											
 
 FULL-RELEASES--

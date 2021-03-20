@@ -67,7 +67,7 @@ def REQ_plantSensorData(msg):
                     # If the data was valid, save it
                     sensorData["plant"] = plant["Name"]
                     sensorData["sensor"] = sensorsParsed[sensor]
-                    sensorData = str(sensorData).replace(":", "-")
+                    sensorData = str(sensorData).replace(":", "--")
                     dataForPlant = sensorData
                     
                     # Otherwise, return the data
@@ -113,7 +113,7 @@ def REQ_plantInfoOnStartup(msg):
     # Get the specific plant to return
     plantDataToSend = plants[int(msg["payload"]) - 1]
     plantDataAsStr = json.dumps(plantDataToSend)
-    plantDataAsStr = plantDataAsStr.replace(":", "||")
+    plantDataAsStr = plantDataAsStr.replace(":", "--")
     # Return the data for a single plant
     publishOutgoingResponse("0", serverName, msg["sender"], plantDataAsStr, "RES_plantInfoOnStartup")
 # end: def REQ_plantInfoOnStartup
@@ -124,7 +124,7 @@ def REQ_plantInfoOnStartup(msg):
 def REQ_addNewPlant(msg):
     # Init the path of the new or existing file
     userpath = "userdata/" + msg["sender"] + ".json"
-    userdata = msg["payload"].split("||")
+    userdata = msg["payload"].split("--")
     
     # Make sure the path exsits
     if (path.exists(userpath)):
@@ -187,14 +187,65 @@ def REQ_deletePlant(msg):
         # If the plant was found, delete it
         if (plants[i]["Name"] == msg["payload"]):
             del plants[i]
+            
             # Save the new plant data (any not deleted plants)
             with open(userpath, "w") as outfile:
                 json.dump(plants, outfile)
             return
+            
         # If the plant was not found, throw an error
         if (i >= len(plants) - 1):
             operationError("ERR_cannotDeletePlant", errCausingHash, msg["sender"])
 # end: def REQ_deletePlant
+
+# ======================================================================
+# def REQ_editPlant
+#
+def REQ_editPlant(msg):
+    # Make sure the user has plant data already
+    userpath = "userdata/" + msg["sender"] + ".json"
+    
+    # Get the name of the plant to be changed and the new data
+    plantToChange = msg["payload"].split(",")
+    oldName = plantToChange[0] # Old plant name, the plant to look for
+    newName = plantToChange[1] # New name for that plant
+    
+    # Check for existing file
+    if (path.exists(userpath)):
+        with open(userpath) as infile:
+            plants = json.load(infile)
+    # If the requesting client has no plant data, throw an error
+    else:
+        operationError("ERR_noPlantDataToRequest", errCausingHash, msg["sender"])
+        return
+    
+    # Make sure the user isn't renaming a plant to an already existing name
+    for i in range(len(plants)):
+        # If the names are equal, the user probably pressed "save" by accident, so don't give them an error
+        if (newName == oldName):
+            return
+        # If a different plant than the one being changed has the newName, throw an error
+        if (plants[i]["Name"] == newName):
+            operationError("ERR_plantNameTaken", errCausingHash, msg["sender"])
+            return
+        
+    # Search for and change the desired plant
+    for i in range(len(plants)):
+        # If the plant was found, edit it accodingly
+        if (plants[i]["Name"] == oldName):
+                
+            # If everything is good, change the name
+            plants[i]["Name"] = newName
+            
+            # Save the new plant data (any not deleted plants)
+            with open(userpath, "w") as outfile:
+                json.dump(plants, outfile)
+            return
+            
+        # If the plant was not found, throw an error
+        if (i >= len(plants) - 1):
+            operationError("ERR_cannotDeletePlant", errCausingHash, msg["sender"])
+# end: def REQ_editPlant
 
 
 
@@ -295,7 +346,7 @@ def decodeIncomingRequest(client, userdata, msg):
     # Decode the message
     entireMsg = msg.payload.decode(encoding='UTF-8')
     globals()['errCausingHash'] = entireMsg.replace(";", "|")
-    globals()['errCausingHash'] = globals()['errCausingHash'].replace(":", "-")
+    globals()['errCausingHash'] = globals()['errCausingHash'].replace(":", "--")
     
     # Split the message into its elements
     msgElements = entireMsg.split(";")
@@ -333,6 +384,7 @@ def decodeIncomingRequest(client, userdata, msg):
             "REQ_plantInfoOnStartup":   REQ_plantInfoOnStartup,
             "REQ_addNewPlant"       :   REQ_addNewPlant,
             "REQ_deletePlant"       :   REQ_deletePlant,
+            "REQ_editPlant"         :   REQ_editPlant,
         }
         
         # Ignore errors about errors to prevent bouncing back

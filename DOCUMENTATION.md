@@ -36,7 +36,9 @@ The expected format for a request or response is:
 "ID:<id here>;sender:<sender of message>;receiver:<intended receiver of message>;payload:<payload here>;operation:<request or response tag here>"
 ```
 
-The keys are case sensitive (id is not the same as ID and will throw an error). There should be no spaces between semicolons or colons (however if a payload has spaces, that is acceptable). Keys and their values should be seperated by colons (:) and different sets of keys/values should be seperated by semicolons (;)
+The keys are case sensitive (id is not the same as ID and will throw an error). There should be no spaces between semicolons or colons (however if a payload has spaces, that is acceptable). Keys and their values should be seperated by colons (:) and different sets of keys/values should be seperated by semicolons (;).
+
+Also note, sometimes colons (:) are substituted for two hyphens (--) and semicolons (;) are substituted for two vertical-bars (||). This usually happens when messages are being sent between the server and client to prevent the colons and semicolons from corrupting data.
 
 Because the operation key is just "operation," request operations are titled with the prefix "REQ_" and response operations are titled with the prefix "RES_"
 
@@ -63,6 +65,8 @@ Response : "RES_plantInfoOnStartup" // Returns information about a particular pl
 Request : "REQ_addNewPlant" // Add a new plant with its name and sensor information
 
 Request : "REQ_deletePlant" // Deletes an existing plant
+
+Request : "REQ_editPlant" // Changes the data for an existing plant
 ```
 
 
