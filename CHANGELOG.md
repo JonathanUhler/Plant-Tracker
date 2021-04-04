@@ -159,6 +159,11 @@ PRE-RELEASES--
 									-Small UI changes
 									-Changed the characters for seperation to :/-- and ;/||. This is now in the DOCUMENTATION.md file as well
 									-Plants can now be edited
+									
+	pre-5.5.0	4/4/21			Changes in this version:
+									-Fixed the bug outlined in issue #14
+									-Added the feature outlined in issue #21
+									-Updated documentation
 											
 
 FULL-RELEASES--

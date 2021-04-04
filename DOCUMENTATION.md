@@ -23,7 +23,7 @@ Payload: Any additional information that comes with a request or response
 
 Transactions include both messages back and forth between a client iOS device the RPI host.
 
-Both the "subscriber.py" and "ViewController.swift" files have two functions to handle message I/O. On the RPI, these are called "decodeIncomingRequest" and "publishOutgoingResponse." On any iOS device, they are called "decodeIncomingResponse" and "publishOutgoingRequest"
+Both the "host.py" and "ViewController.swift" files have two functions to handle message I/O. On the RPI, these are called "decodeIncomingRequest" and "publishOutgoingResponse." On any iOS device, they are called "decodeIncomingResponse" and "publishOutgoingRequest"
 
 
 # Formatting Operations
@@ -40,7 +40,7 @@ The keys are case sensitive (id is not the same as ID and will throw an error). 
 
 Also note, sometimes colons (:) are substituted for two hyphens (--) and semicolons (;) are substituted for two vertical-bars (||). This usually happens when messages are being sent between the server and client to prevent the colons and semicolons from corrupting data.
 
-Because the operation key is just "operation," request operations are titled with the prefix "REQ_" and response operations are titled with the prefix "RES_"
+Because the operation key is just "operation," request operations are titled with the prefix "REQ_" and response operations are titled with the prefix "RES_". Errors are titled with the prefix "ERR_" (see "Operation Errors" below)
 
 
 # Request and Response Tags
@@ -100,6 +100,8 @@ A list of error tags are their meanings is:
 "ERR_plantNameTaken" // The user is trying to add a plant whose name is already taken
 
 "ERR_plantNameTooLong" // The user is trying to add a plant whose name is too long
+
+"ERR_kickedForSpam" // The user is trying to send too many messages. To protect the server, they have been disconnected
 ```
 
 
@@ -118,7 +120,18 @@ As the line above shows, each plant for any given user is a dictionary (or hash)
 
 A list of functions for the iOS app and their purpose can be found below:
 
-"Utility" functions--
+struct PlantBox----
+
+```
+addPlantBox	   // Adds a plant box to a UIView element. The plant box is comprised of the rectangle, name, and other details
+
+addRect	   // Adds a rectangle to a plant box
+
+addText	   // Adds text to a plant box
+```
+
+class ViewController----
+
 ```
 viewDidLoad	   // build-in iOS function, completes some initially setup on launch
 
@@ -135,19 +148,13 @@ refreshPlantsDisplayed    // Refreshes the plants
 displayPlantsOnScreen    // Displays boxes with plant info
 
 handleTap    // Handles taping on the plants
-```
 
-"Operation" functions--
-```
 RES_plantSensorData    // Processes the plant sensor data
 
 RES_numPlants    // Processes the number of plants
 
 RES_plantInfoOnStartup    // Gets basic plant information when the app starts
-```
 
-"Storyboard" and "Server" functions--
-```
 operationError    // Throws an error
 
 popupError    // Show a popup alert with an error message
@@ -170,7 +177,6 @@ plantSettings    // Alter information about a plant or delete the plant complete
 
 A list of functions for the host.py script can be found below:
 
-"Operation" functions--
 ```
 REQ_plantSensorData    // Returns plant sensor data to the requesting client
 
@@ -181,10 +187,7 @@ REQ_plantInfoOnStartup    // Returns basic plant info to the requesting cleint
 REQ_addNewPlant    // Processes adding a new plant
 
 REQ_deletePlant    // Deletes a plant
-```
 
-"Server" functions--
-```
 connectionStatus    // Connects and subscribes the python script to the actual server
 
 operationError    // Throws an error
@@ -197,7 +200,6 @@ decodeIncomingRequest    // Processes an incoming request message
 
 A list of functions for the sensors.py script can be found below
 
-"Operation" functions--
 ```
 readSensor    // Reads the data from a given sensor
 ```

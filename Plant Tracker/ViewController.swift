@@ -46,12 +46,16 @@
 //
 // pre-5.4.1	3/19/21			Changes in this version:
 //									-Fixed an issue with moisture bars rendering in the wrong location on smaller screens
+//
+// pre-5.5.0	4/4/21			Changes in this version:
+//									-Fixed the bug outlined in issue #14
+//									-Added the feature outlined in issue #21
+//									-Updated documentation
 
 
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
-// 2) Fix plant order. When new plants are added, the most recent plant is on the top and all others are below it in order. This does not make sense (the order should just be how they were added or maybe alphabetically)
 
 
 // Import libraries
@@ -701,13 +705,18 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			"ERR_missingKeys"			:	"Internal error - submit an issue",
 			"ERR_invalidOpTag"			:	"Internal error - submit an issue",
 			"ERR_noPlantDataToRequest"	:	"You do not have any existing plant data",
-			"ERR_tooManyPlants"			:	"You have reached the maximum of \(maxPlants) plant",
+			"ERR_tooManyPlants"			:	"You have reached the maximum of \(maxPlants) plants",
 			"ERR_cannotDeletePlant"		:	"Something went wrong when trying to delete a plant",
 			"ERR_addPlantSensorNumIssue":	"The number of sensors you entered was invalid",
 			"ERR_invalidPlantSensorID"	:	"The sensor identifier you entered was invalid. One or more plants could not be updated",
 			"ERR_plantNameTaken"		:	"The name you are trying to enter is already taken by another plant",
-			"ERR_plantNameTooLong"		:	"The name of the plant you are trying to add is too long. Character limit is \(maxPlantName)"
+			"ERR_plantNameTooLong"		:	"The name of the plant you are trying to add exceeds the maximum of \(maxPlantName) characters",
+			"ERR_kickedForSpam"			:	"You have been forcefully disconnected from the server for spam. Please do not send so many messages!"
 		]
+		
+		if (errorCode == "ERR_kickedForSpam") {
+			mqttClient.disconnect();
+		}
 		
 		// Create a new alert controller and specify the title and message
 		let errorAlert = UIAlertController(title: "Error", message: "Code: \(errorCode)\n\n\(errorCodeDescriptors[errorCode]!)", preferredStyle: .alert)
@@ -822,6 +831,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			"ERR_invalidPlantSensorID"	:	popupError,
 			"ERR_plantNameTaken"		:	popupError,
 			"ERR_plantNameTooLong"		:	popupError,
+			"ERR_kickedForSpam"			:	popupError,
 		]
 		
 		// Process the message: run a function, throw an error, etc

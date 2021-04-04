@@ -6,6 +6,8 @@ import paho.mqtt.publish as publish # Import mqtt
 from os import path # Import the path function to check if a userdata file exists or not
 import json # Used to read and write userdata
 import sensors # Import the sensors.py file
+import time # Import time
+import threading # Import thread
 # import RPi.GPIO as gpio # Import GPIO --> This will not be used in this case
 
 
@@ -18,6 +20,11 @@ maxPlants = 7 # Maximum number of plants the user can have
 maxPlantName = 15 # Longest plant name the user can have
 
 errCausingHash = "null" # If an error occurs, this is sent back to the client who caused the error for debug
+
+kickHash = {} # Used to keep track of each client and the number of messages they have sent
+markEjection = [] # Used to keep track of offending clients
+monitorInterval = 15 # How often the server completes a cleanup routine to kick clients sending too many messages
+msgThreshold = 15 # If the client sends more than this many messages in monitorInterval time, kick them
 
 
 # ======================================================================
@@ -111,7 +118,7 @@ def REQ_plantInfoOnStartup(msg):
         return
         
     # Get the specific plant to return
-    plantDataToSend = plants[int(msg["payload"]) - 1]
+    plantDataToSend = plants[int(msg["payload"])]
     plantDataAsStr = json.dumps(plantDataToSend)
     plantDataAsStr = plantDataAsStr.replace(":", "--")
     # Return the data for a single plant
@@ -325,6 +332,35 @@ def publishOutgoingResponse(msgID, sender, receiver, payload, operation):
 
 
 # ======================================================================
+# def monitorClients
+#
+# Monitors how many messages each client is sending and ejects clients
+# sending too many messages
+#
+# Arguments--
+#
+# None
+#
+# Returns--
+#
+# None
+#
+def monitorClients():
+    while (True):
+        for i in globals()['kickHash']:
+            if (globals()['kickHash'][i] > msgThreshold):
+                # Disconnect the client
+                markEjection.append(i)
+                
+        globals()['kickHash'] = {} # Prepare the kickHash for the next cleanup
+        time.sleep(monitorInterval)
+# end: def monitorClients
+
+x = threading.Thread(target=monitorClients)
+x.start()
+
+
+# ======================================================================
 # def decodeIncomingRequest
 #
 # Decode a message recieved from the topic
@@ -342,6 +378,11 @@ def publishOutgoingResponse(msgID, sender, receiver, payload, operation):
 # None
 #
 def decodeIncomingRequest(client, userdata, msg):
+    
+    # Whenever a message is sent, complete the cleanup routine by kicking any previously offending clients
+    for client in markEjection:
+        publishOutgoingResponse("0", serverName, client, "none", "ERR_kickedForSpam")
+        globals()['markEjection'] = [] # Reset the eject list
     
     # Decode the message
     entireMsg = msg.payload.decode(encoding='UTF-8')
@@ -373,6 +414,14 @@ def decodeIncomingRequest(client, userdata, msg):
     if (not (len(msgHash) == 5)): 
         operationError("ERR_hashLength", errCausingHash, msgHash["sender"])
         return
+        
+    # Check to see if the connecting client is already in kickHash
+    if (not msgHash["sender"] == serverName):
+        if (msgHash["sender"] in kickHash):
+            kickHash[msgHash["sender"]] += 1 # Increment the number of messages they have sent
+        else:
+            kickHash[msgHash["sender"]] = 1 # If the client did not already exist, add them
+        print(f">>MSG CLIENT: " + str(kickHash[msgHash["sender"]]))
     
     # Make sure the message is not just a PUBACK (publish sent back) from the RPI host
     if (not msgHash["sender"] == serverName):
@@ -414,12 +463,8 @@ def decodeIncomingRequest(client, userdata, msg):
 # end: def decodeIncomingRequest
 
 
-
-# Set client name (of the raspberry pi)
-clientName = serverName
-
 # Instate Eclipse Paho as mqttClient
-mqttClient = mqtt.Client(clientName)
+mqttClient = mqtt.Client(serverName)
 
 # Set calling functions to mqttClient
 mqttClient.on_connect = connectionStatus # Called when the RPI
