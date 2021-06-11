@@ -167,6 +167,8 @@ struct PlantBox {
 
 
 
+
+
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // MARK: class ViewController
 //
@@ -174,7 +176,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.6.0"
+	let PlantTrackerVersion = "1.0.0"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -222,7 +224,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	// Updates dark mode settings
 	//
 	override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-		ViewController.darkModeEnabled = !ViewController.darkModeEnabled
+		if (UITraitCollection.current.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle && UIApplication.shared.applicationState != .background) {
+			ViewController.darkModeEnabled = (UITraitCollection.current.userInterfaceStyle == .dark) ? true : false
+			refreshPlantsDisplayed()
+			mqttClient.disconnect()
+			viewDidLoad()
+		}
 	}
 	// end: func traitCollectionDidChange
 	
@@ -243,6 +250,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	override func viewDidLoad() {
 		
 		super.viewDidLoad()
+		
+		self.view.backgroundColor = (ViewController.darkModeEnabled) ? darkModeColor : lightModeColor
 		
 		// Init the host address
 		hostAddress = UserDefaults.standard.string(forKey: "hostAddress") ?? ""

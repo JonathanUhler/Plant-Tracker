@@ -173,4 +173,5 @@ FULL-RELEASES--
 
 	version		date							changes
 	-------		--------			----------------------------------
-	
+	1.0.0		6/11/21			Changes in this version:
+									-First full version of Plant-Tracker
