@@ -31,28 +31,6 @@
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 
 
-// ====================================================================================================
-// Revision History (see CHANGELOG.md for full history)
-//
-// PRE-RELEASES
-//
-//	version		  date					changes
-//  -------		--------		-----------------------
-// pre-5.4.0	3/19/21			Changes in this version:
-//									-Documentation changes
-//									-Small UI changes
-//									-Changed the characters for seperation to :/-- and ;/||. This is now in the DOCUMENTATION.md file as well
-//									-Plants can now be edited
-//
-// pre-5.4.1	3/19/21			Changes in this version:
-//									-Fixed an issue with moisture bars rendering in the wrong location on smaller screens
-//
-// pre-5.5.0	4/4/21			Changes in this version:
-//									-Fixed the bug outlined in issue #14
-//									-Added the feature outlined in issue #21
-//									-Updated documentation
-
-
 // TO-DO--
 //
 // 1) Add in message ID functionality; when a request is sent, it is given a message ID and the response to that request is given the same message ID
@@ -87,6 +65,10 @@ struct PlantBox {
 	lazy var screenWidth = screenRect.size.width
 	lazy var screenHeight = screenRect.size.height
 	
+	let lightModeColor = UIColor.white
+	let darkModeColor = UIColor.black
+	var darkModeEnabled = ViewController.darkModeEnabled
+	
 	
 	// ====================================================================================================
 	// MARK: func addPlantBox
@@ -104,9 +86,9 @@ struct PlantBox {
 	mutating func addPlantBox() {
 
 		// Display a box
-		addRect(x: boxX, y: boxY, w: boxW, h: boxH, color: UIColor.white)
+		addRect(x: boxX, y: boxY, w: boxW, h: boxH, color: (darkModeEnabled) ? darkModeColor : lightModeColor)
 		// Display the name of the plant
-		addText(x: boxX + screenWidth * 0.03, y: boxY, w: boxW * 0.45, h: boxH, msg: "\(plantName)", color: UIColor.black, fontSize: 20)
+		addText(x: boxX + screenWidth * 0.03, y: boxY, w: boxW * 0.45, h: boxH, msg: "\(plantName)", color: (darkModeEnabled) ? lightModeColor : darkModeColor, fontSize: 20)
 		
 	}
 	// end: func addPlantBox
@@ -137,7 +119,7 @@ struct PlantBox {
 		
 		newPlantBox = UIView(frame: CGRect(x: x, y: y, width: w, height: h)) // Define the limits of the box
 		newPlantBox.layer.borderWidth = 3 // Set the border thickness
-		newPlantBox.layer.borderColor = UIColor.black.cgColor // Set the border color
+		newPlantBox.layer.borderColor = (darkModeEnabled) ? lightModeColor.cgColor : darkModeColor.cgColor // Set the border color
 		newPlantBox.backgroundColor = color // Set the background color of the box (everything within the border)
 		
 		boxView.addSubview(newPlantBox) // Save the new box UIView
@@ -184,6 +166,7 @@ struct PlantBox {
 
 
 
+
 // +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // MARK: class ViewController
 //
@@ -191,7 +174,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	
 	// MARK: Init Class Variables
 	// App version
-	let PlantTrackerVersion = "pre-5.4.1"
+	let PlantTrackerVersion = "pre-5.6.0"
 	
 	// Get the screen dimensions
 	let screenRect = UIScreen.main.bounds
@@ -216,6 +199,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	let maxPlants = 7 // Maximum number of plants the user can have
 	let maxPlantName = 15 // Maximum character length a plant can be named
 	
+	let lightModeColor = UIColor.white
+	let darkModeColor = UIColor.black
+	static var darkModeEnabled = (UITraitCollection.current.userInterfaceStyle == .dark) ? true : false
+	
 	// Storyboard elements
 	@IBOutlet weak var hostIPTextBox: UITextField!
 	
@@ -227,6 +214,17 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	// clientID:	the name of the client requesting to connect
 	var mqttClient: CocoaMQTT = CocoaMQTT(clientID: UIDevice.current.identifierForVendor!.uuidString, host: "", port: 1883)
 	
+	
+	
+	// ====================================================================================================
+	// MARK: func traitCollectionDidChange
+	//
+	// Updates dark mode settings
+	//
+	override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+		ViewController.darkModeEnabled = !ViewController.darkModeEnabled
+	}
+	// end: func traitCollectionDidChange
 	
 	
 	// ====================================================================================================
@@ -258,7 +256,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 		}
 		
 		// Display the app version
-		displayText(x: screenWidth * 0.35, y: screenHeight * 0.18, w: screenWidth, h: 15, msg: "Version: \(PlantTrackerVersion)", color: UIColor.black, fontSize: 15)
+		displayText(x: screenWidth * 0.35, y: screenHeight * 0.18, w: screenWidth, h: 15, msg: "Version: \(PlantTrackerVersion)", color: (ViewController.darkModeEnabled) ? lightModeColor : darkModeColor, fontSize: 15)
 		
 	}
 	// end: func viewDidLoad
@@ -417,7 +415,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 	//
 	func refreshPlantsDisplayed() {
 		// Remove any current plants being displayed
-		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: UIColor.white)
+		self.displayRect(x: self.screenWidth * 0.05, y: self.screenHeight * 0.205, w: self.screenWidth * 0.9, h: self.screenHeight * 0.7, color: (ViewController.darkModeEnabled) ? darkModeColor : lightModeColor)
 		// Refresh the plant data
 		self.plantJSON = []
 		tapGestureList = []
@@ -607,14 +605,14 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			
 			let numWidth = floor(log10(Double(sensorToDisplay))) + 1 // Figure out how wide the displayed number will be in order to shift it slightly
 			// Prevent data values from stacking
-			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.22) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: UIColor.white)
+			displayRect(x: screenWidth * 0.5, y: (screenHeight * 0.22) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.06, color: (ViewController.darkModeEnabled) ? darkModeColor : lightModeColor)
 			// Display the sensor data
-			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: UIColor.black, fontSize: 15)
+			displayText(x: screenWidth * CGFloat((0.69 - (numWidth / 110))), y: (screenHeight * 0.205) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.05, msg: "\(sensorToDisplay)", color: (ViewController.darkModeEnabled) ? lightModeColor : darkModeColor, fontSize: 15)
 			
 			// Display the moisture bar
 			displayMoistureBar(x: screenWidth * 0.5, y: (screenHeight * 0.26) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.4, h: screenHeight * 0.005)
 			// Display the dot on the moisture bar
-			displayRect(x: (screenWidth * 0.5) + (CGFloat(sensorToDisplay) * (screenWidth * 0.039)), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: UIColor.black)
+			displayRect(x: (screenWidth * 0.5) + (CGFloat(sensorToDisplay) * (screenWidth * 0.039)), y: (screenHeight * 0.254) + (CGFloat(i) * (screenHeight * 0.1)), w: screenWidth * 0.01, h: screenWidth * 0.03, color: (ViewController.darkModeEnabled) ? lightModeColor : darkModeColor)
 		}
 	}
 	// end: func RES_plantSensorData
@@ -905,13 +903,13 @@ class ViewController: UIViewController, UITextFieldDelegate {
 			mqttClient.connect()
 			
 			// Clear any previous status message
-			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+			displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: (ViewController.darkModeEnabled) ? darkModeColor : lightModeColor)
 			// Tell the user they have connected
 			displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 90, h: 15, msg: "Connected", color: UIColor.green, fontSize: 15)
 			
 			if (hostAddress == "") {
 				// Clear any previous status message
-				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: UIColor.white)
+				displayRect(x: screenWidth * 0.17, y: screenHeight * 0.13, w: screenWidth, h: 15, color: (ViewController.darkModeEnabled) ? darkModeColor : lightModeColor)
 				// Tell the user there is no host address
 				displayText(x: screenWidth * 0.17, y: screenHeight * 0.13, w: 120, h: 15, msg: "No host address", color: UIColor.red, fontSize: 15)
 				// Turn off the switch
@@ -936,11 +934,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
 				sender.setOn(false, animated: true)
 	
 				// Clear any previous status message
-				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: UIColor.white)
+				self.displayRect(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: self.screenWidth, h: 15, color: (ViewController.darkModeEnabled) ? self.darkModeColor : self.lightModeColor)
 				// Tell the user the disconnection status
 				if (error == nil) {
 					// If the client disconnected on their own with the button
-					self.displayText(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 90, h: 15, msg: "Disconnected", color: UIColor.black, fontSize: 15)
+					self.displayText(x: self.screenWidth * 0.17, y: self.screenHeight * 0.13, w: 90, h: 15, msg: "Disconnected", color: (ViewController.darkModeEnabled) ? self.lightModeColor : self.darkModeColor, fontSize: 15)
 				}
 				else {
 					// If the client was forcefully disconnected

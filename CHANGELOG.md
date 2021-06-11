@@ -164,6 +164,9 @@ PRE-RELEASES--
 									-Fixed the bug outlined in issue #14
 									-Added the feature outlined in issue #21
 									-Updated documentation
+
+	pre-5.6.0	6/11/21			Changes in this version:
+									-Added support for dark mode
 											
 
 FULL-RELEASES--
